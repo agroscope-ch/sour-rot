@@ -12,7 +12,7 @@ For each observation (i.e. a healthy or infected berry or a _Drosophila_) $`\mat
 
 ## Data description
 
-The dataset contains, for each genotype :
+The dataset contains 124 samples, distributed as follows :
 
 - each insect harvest (1 to 6 ) for the 3 insect types (male, female, other)
 - each berry harvested (1 to 8 ) for each cluster
