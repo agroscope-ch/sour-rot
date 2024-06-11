@@ -9,8 +9,9 @@ LoadSourRot <- function(normalization = FALSE )
   # normalization: if TRUE, returns the proportion of species in each sample and not the absolute number of occurrences
   dfSourRot <- read_excel(path = "Data/data_sour_rot.xlsx", col_names = T, skip = 1)
   apply(dfSourRot, 2, function(z)all(is.na(z))) |> which()
-  # dfSourRot <- dfSourRot |> 
-  #   dplyr::rename(species = "genotype", order = "ordre")
+  ## rename some columns in English
+  dfSourRot <- dfSourRot |>
+    dplyr::rename(species = "genotype", order = "ordre")
   # We remove this problematic sample
   dfSourRot <- dfSourRot |> 
     select(-G4B1) 

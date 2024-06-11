@@ -8,7 +8,7 @@ Fungal communities were studied in 4 different environments:
 
 The aim is to see if there are any differences in terms of fungal community. We have discarded the data of the inside of healthy berries as there was just a very few fungi inside. 
 
-For each observation (i.e. a healthy or infected berry or a _Drosophila_) $`\mathbf{x}_i,\quad i = 1,\dots,n`$, we observe a certain number of different fungi. In concrete terms, let $`p`$ be the number of different fungi observed in all samples, and let $`x_{ik}`$ be the number of occurrences of fungus $`k, \quad k = 1,\dots,p`$ in sample $`i`$. The design matrix $`\mathbf{X}`$ with generic entries $`x_{ik}`$ is the data set provided in the file [Missing link]()
+For each observation (i.e. a healthy or infected berry or a _Drosophila_) $`\mathbf{x}_i,\quad i = 1,\dots,n`$, we observe a certain number of different fungi. In concrete terms, let $`p`$ be the number of different fungi observed in all samples, and let $`x_{ik}`$ be the number of occurrences of fungus $`k, \quad k = 1,\dots,p`$ in sample $`i`$. The design matrix $`\mathbf{X}`$ with generic entries $`x_{ik}`$ is the data set provided in the file [data_sour_rot](Data/data_sour_rot.xlsx)
 
 ## Data description
 
