@@ -1,0 +1,196 @@
+---
+title: "Reproducing the figures of Hofstetter et al."
+author: "Matthieu Wilhelm"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+We first load and preprocess the data and as well as import the package [`metacoder`](https://github.com/grunwaldlab/metacoder).
+
+```{r loading, message=FALSE}
+source("Load_preprocess_sour_rot.R")
+library(metacoder)
+
+
+lsSourRot <- LoadSourRot(normalization = FALSE)
+dfSourRot <- lsSourRot$dfSourRot
+vars <- lsSourRot$vars
+types <- lsSourRot$types
+
+rm(lsSourRot)
+```
+Then, we create an object that can be parsed by the utilities of `metacoder`. It essentially follows the steps described in the [documentation](https://grunwaldlab.github.io/metacoder_documentation/index.html) of the package.
+```{r parse metacoder, message=FALSE}
+# creates a column that contains taxonomic information
+dfSourRot$lineage <- apply(data.frame(root = "r__Root",apply(dfSourRot[,1:4], 1, function(z)paste(c("s__","g__", "f__", "o__" ),z, sep="") ) |> t())
+                             ,1, paste0, collapse= ";")
+
+
+obj <- parse_tax_data(dfSourRot[, -c(1:4)], # we do not consider the columns corresponding to species, genus, family and order 
+                      class_cols = "lineage", # the column that contains taxonomic information
+                      class_sep = ";", # The character used to separate taxa in the classification
+                      class_regex = "^(.+)__(.+)$", # Regex identifying where the data for each taxon is
+                      class_key = c(tax_rank = "info", # A key describing each regex capture group
+                                    tax_name = "taxon_name"))
+```
+
+#### Abundance
+
+We then compute the necessary tables that will then be used to display the absolute counts of each ITS. This is intrisically not normalized and comparison must be done with care. Indeed, by simply sampling more in one of the group would result in an imbalance in terms of counts, which may or may not be related to a difference in the distribution of the species in the various groups. 
+
+```{r}
+
+obj$data$tax_abund <- calc_taxon_abund(obj, "tax_data", cols = vars)
+obj$data$tax_occ <- calc_n_samples(obj, "tax_abund", groups = types, cols = vars)
+
+## computes the range of occurences. There is certainly a more efficient way to do it...
+range_col <- obj$data$tax_occ |> 
+  select(-taxon_id) |> 
+  lapply( FUN = range) |>
+  do.call(args = _ , rbind) |> 
+  as.data.frame() |> 
+  summarise(Min = min(V1), Max = max(V2)) |> 
+  unlist()
+
+```
+
+We then plots three heat trees that reflect the abundance. In this first three plots, we use the same color scale to allow for a comparison between the various counts. Note however that this must be done with care. Note that these plots are then also saved in a pdf file. 
+
+```{r heat trees counts common color scale}
+ set.seed(1) # This makes the plot appear the same each time it is run 
+  heat_tree(obj, 
+            node_label = taxon_names,
+            node_size = n_obs,
+            node_color = extern, 
+            title = "Surface of healthy berries",
+            title_size = 0.04,
+            node_size_axis_label = "ITS genotypes",
+            node_color_axis_label = "Samples with reads",
+            layout = "davidson-harel", # The primary layout algorithm
+            initial_layout = "reingold-tilford",
+            edge_color_interval =  range_col, 
+            output_file = paste0("Figures/heat_tree_extern", ".pdf"))
+  
+  set.seed(1) # This makes the plot appear the same each time it is run 
+  heat_tree(obj, 
+            node_label = taxon_names,
+            node_size = n_obs,
+            node_color = insect, 
+            title = "Drosophilia spp.",
+            title_size = 0.04,
+            node_size_axis_label = "ITS genotypes",
+            node_color_axis_label = "Samples with reads",
+            layout = "davidson-harel", # The primary layout algorithm
+            initial_layout = "reingold-tilford",
+            edge_color_interval =  range_col, 
+            output_file = paste0("Figures/heat_tree_insect", ".pdf"))
+  set.seed(1) # This makes the plot appear the same each time it is run 
+  heat_tree(obj, 
+            node_label = taxon_names,
+            node_size = n_obs,
+            node_color = obj$data$tax_occ$`sour rot`,
+            title = "Symptomatic berries",
+            title_size = 0.04,
+            node_size_axis_label = "ITS genotypes",
+            node_color_axis_label = "Samples with reads",
+            layout = "davidson-harel", # The primary layout algorithm
+            initial_layout = "reingold-tilford",
+            edge_color_interval =  range_col, 
+            output_file = paste0("Figures/heat_tree_sour_rot", ".pdf"))
+
+```
+
+The next three plots are the exact same, but without a common color scale. This allows one for an interpretation tailored to the group.
+
+```{r heat trees counts free color scale}
+  heat_tree(obj, 
+            node_label = taxon_names,
+            node_size = n_obs,
+            node_color = extern,
+            title_size = 0.04,
+            title = "Surface of healthy berries",
+            node_size_axis_label = "ITS genotypes",
+            node_color_axis_label = "Samples with reads",
+            layout = "davidson-harel", # The primary layout algorithm
+            initial_layout = "reingold-tilford")
+  
+  set.seed(1) # This makes the plot appear the same each time it is run 
+  heat_tree(obj, 
+            node_label = taxon_names,
+            node_size = n_obs,
+            node_color = insect,
+            title = 'Drosophilia spp',
+            title_size = 0.04,
+            node_size_axis_label = "ITS genotypes",
+            node_color_axis_label = "Samples with reads",
+            layout = "davidson-harel", # The primary layout algorithm
+            initial_layout = "reingold-tilford")
+  set.seed(1) # This makes the plot appear the same each time it is run 
+  heat_tree(obj, 
+            node_label = taxon_names,
+            node_size = n_obs,
+            node_color = obj$data$tax_occ$`sour rot`,
+            title = "Symptomatic berries",
+            title_size = 0.04,
+            node_size_axis_label = "ITS genotypes",
+            node_color_axis_label = "Samples with reads",
+            layout = "davidson-harel", # The primary layout algorithm
+            initial_layout = "reingold-tilford")
+
+```
+
+
+#### Relative abundance
+
+As already mentioned, since samples are intrisically imbalanced, a direct comparion is not well suited. We thus resort to a relative abundance: for each sample, the proportion of counts are computed for each taxon.
+
+```{r compute tables relative abundance, warning=FALSE, message= FALSE}
+
+obj$data$its_table <- calc_obs_props(obj, data = "tax_data", cols = vars) # for proportion
+obj$data$tax_table <- calc_taxon_abund(obj, data = "its_table", cols = vars)
+# to compare differences between groups and then plot it
+obj$data$diff_table <- compare_groups(obj, data = "tax_table", cols = vars, groups = types)
+
+```
+Now, it is possible to compare the groups pairwise in terms of proportion within each group (healthy berries, sour rot symptomatic berries and Drosophilia), which all are on the same scale, namely the interval $[0,1]$. For each edge (i.e. taxon), the median of the proportion of the corresponding taxon in the group considered is computed. Then, in the first plot, the log (in base 2) of the ratio of the two medians (or equivalently, of the differences of the logs) is represented on the color scale, for each pair of groups. Note that, by convention, if any of the two medians is 0, then 0 is displayed. In the second plot, the difference between the two median proportion is plotted. Since the two medians both are in the interval $[0,1]$, the difference is in the interval $[-1,1]$. 
+
+A taxon colored brown is more abundant in the group in the column while a taxon colored green is more abundant in group of the row; see also the color of the labels of rows and columns. See this [paragraph](https://grunwaldlab.github.io/metacoder_documentation/faq.html#differential-heat-trees-with-compare_groups-which-color-is-which-treatment) for implementation details and further clarifications about differential heat trees implemented in `metacoder`. 
+
+```{r plot differential heat trees}
+
+set.seed(1)
+heat_tree_matrix(obj,
+                 data = "diff_table",
+                 node_size = n_obs, # n_obs is a function that calculates, in this case, the number of OTUs per taxon
+                 node_label = taxon_names,
+                 node_color = log2_median_ratio, # A column from `obj$data$diff_table`
+                 node_color_range = diverging_palette(), # The built-in palette for diverging data
+                 node_color_trans = "area", # The default is scaled by circle area
+                 node_color_interval = c(-3, 3), # The range of `log2_median_ratio` to display
+                 edge_color_interval = c(-3, 3), # The range of `log2_median_ratio` to display
+                 node_size_axis_label = "ITS genotypes",
+                 node_color_axis_label = "Log 2 ratio median proportions",
+                 layout = "davidson-harel", # The primary layout algorithm
+                 initial_layout = "reingold-tilford", # The layout algorithm that initializes node locations
+                 output_file = paste0("Figures/relative_log2_differential_heat_tree", ".pdf"))
+heat_tree_matrix(obj,
+                 data = "diff_table",
+                 node_size = n_obs, # n_obs is a function that calculates, in this case, the number of OTUs per taxon
+                 node_label = taxon_names,
+                 node_color = median_diff, # A column from `obj$data$diff_table`
+                 node_color_range = diverging_palette(),
+                 node_color_interval = c(-0.75, 0.75), # The range of `median_ratio` to display
+                 edge_color_interval = c(-0.75, 0.75), # The range of `median_ratio` to display
+                 node_size_axis_label = "ITS genotypes",
+                 node_color_axis_label = "Difference of median proportions",
+                 layout = "davidson-harel", # The primary layout algorithm
+                 initial_layout = "reingold-tilford",
+                 output_file = paste0("Figures/relative_median_differential_heat_tree", ".pdf"))
+
+
+```
+

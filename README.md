@@ -1,12 +1,12 @@
 # Sour Rot
 
-Fungal communities were studied in 4 different environments:
+Fungal communities were studied in 3 different environments:
+
 - Drosophila, vectors of the disease;
 - The skin of healthy grape berries;
-- The inside of healthy grape berries
 - berries affected by the disease (i.e., with indistinguishable exteriors and interiors).
 
-The aim is to see if there are any differences in terms of fungal community. We have discarded the data of the inside of healthy berries as there was just a very few fungi inside. 
+The aim is to see if there are any differences in terms of fungal community. 
 
 For each observation (i.e. a healthy or infected berry or a _Drosophila_) $`\mathbf{x}_i,\quad i = 1,\dots,n`$, we observe a certain number of different fungi. In concrete terms, let $`p`$ be the number of different fungi observed in all samples, and let $`x_{ik}`$ be the number of occurrences of fungus $`k, \quad k = 1,\dots,p`$ in sample $`i`$. The design matrix $`\mathbf{X}`$ with generic entries $`x_{ik}`$ is the data set provided in the file [data_sour_rot](Data/data_sour_rot.xlsx)
 
@@ -21,7 +21,14 @@ The dataset contains 124 samples, distributed as follows :
 
 For each detected fungus, the species, the genus, the family and the order are given. Some are classified as _Incertae sedis_. 
 
-## Note on data saving
+## Description of the codes in this repository
+
+The codes consist in two distinct files:
+
+- [`Load_preprocess_sour_rot.R`](Load_preprocess_sour_rot.R). It is a simple code that preprocesses the data.
+- [`Reproducing_figures_sour_rot.Rmd`](Reproducing_figures_sour_rot.Rmd). It is a Rmarkdown document that reproduces the figures that are included in the paper  (and some others that not been included). Running this notebook, one can reproduce all the plots that provided in the paper. Some additional details are also given. 
+
+## Note on data storage
 
 To ensure long term support and readability of the dataset, we have saved a copy of the original `.xlsx` file in a `.csv` file. To do so, we have run the following R line of code (using the package [`readxl`](https://readxl.tidyverse.org/))
 
