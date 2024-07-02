@@ -42,7 +42,10 @@ dfSourRotDiversity <- dfSourRot[,c(level.work, vars)] |>
 
 ```
 
-We then create a data frame where all pairwise $\beta-$diversities are computed (preceded by a standardisation step and using the Bray-Curtis index; see @LegendreCaceres)
+We then create a data frame where all pairwise $\beta-$diversities are computed (preceded by a standardisation step and using the Bray-Curtis index; see @LegendreCaceres).
+
+$\beta-$diversity can be interpreted as a distance between two different samples. We will group the distances by types and compare them. In plain words, and if consider the analogy of distances, samples can be considered as cities and types as regions or states. If the types are well separated, in which case one may think about regions/types as islands, then the distances between cities (samples) **within** a given region will tend to be smaller than distances between cities that are in different regions. So it is interesting to compare the distribution of the $\beta$-diversity indices with different groups. 
+
 ```{r creating dataframe of comparisons}
 
 
@@ -70,7 +73,7 @@ select.categories <- apply(indices.unique.types, c(2,1),function(z)unique(types)
 
 ```
 
-We can now create a data frame with all the pairwise distances, together with the couple of categories they belong to. It is then stored in the object `df_plot`, which will then be used for plotting.
+Note that the distances are indices that are ranging from 0 (identical samples) to 1 (samples with no overlap at all). We can now create a data frame with all the pairwise distances, together with the couple of categories they belong to. It is then stored in the object `df_plot`, which will then be used for plotting.
 ```{r create dataframe with distances}
 
 
@@ -115,5 +118,7 @@ ggplot(df_plot, aes(x  = value, col  = interaction)) +
 
 ```
 
-### References
+We see that, using this distance (`Bray-curtis` in the  `vegan::vegdist` function) and this preprocessing (`Hellinger` in the `vegan::decostand` function), we do not see any clear difference between the distributions. Note that there are many non-overlapping samples, which all result in the maximum distance (1).  
+
+#### References
 
