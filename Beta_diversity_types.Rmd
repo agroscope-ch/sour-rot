@@ -1,0 +1,119 @@
+---
+title: Analysis of \(\beta\)-diversity, accompanying _Hofstetter et al._
+author: "Matthieu Wilhelm"
+date: "`r Sys.Date()`"
+output: html_document
+bibliography: bibliography.bib 
+link-citations: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+We first load and preprocess the data. Note that we also choose the granularity at which we aggregate the data, the object `level.work` in the code below. More precisely, two taxa are considered as different if they belong to a different `level.work` (which can be any of `"order", "family", "genus", "species"`).
+
+```{r load preprocess, message=FALSE, warning=FALSE}
+source("Load_preprocess_sour_rot.R")
+#
+library(vegan)
+
+lsSourRot <- LoadSourRot(normalization = FALSE)
+dfSourRot <- lsSourRot$dfSourRot
+vars <- lsSourRot$vars
+types <- lsSourRot$types
+
+rm(lsSourRot)
+
+
+## selecting the level of accuracy on which we want to work
+
+## possibles arguments are (from coarsest to finest)
+# "order", "family", "genus", "species"
+level.work <- "species"
+
+
+dfSourRotDiversity <- dfSourRot[,c(level.work, vars)] |> 
+  group_by(pick({{level.work}})) |> 
+  dplyr::summarise(across(.cols = {{vars}}, .fns = ~ sum(.x, na.rm = TRUE)))
+
+
+```
+
+We then create a data frame where all pairwise $\beta-$diversities are computed (preceded by a standardisation step and using the Bray-Curtis index; see @LegendreCaceres)
+```{r creating dataframe of comparisons}
+
+
+df <- dfSourRotDiversity[,-1] |>
+  t() |> ### Community data matrix: x with samples as rows and species as column for vegan documentation
+  vegan::decostand(method =  "hellinger") |> #### normalization/standardization step
+  vegan::vegdist(method = "bray", binary = FALSE) |> #### choice of the beta diversity index.
+  as.matrix()
+#
+# 
+
+# Creates a matrix with all combination of two elements among nr elements + 
+# couples of identical indices, so that indices.unique.types has 
+# choose(nr, 2) + nr rows
+nr <- length(unique(types))
+z <- sequence(nr)
+indices.unique.types <- cbind(
+  row = unlist(lapply(2:nr, function(x) x:nr), use.names = FALSE),
+  col = rep(z[-length(z)], times = rev(tail(z, -1))-1))
+indices.unique.types <- rbind(indices.unique.types,
+                              rep(which(unique(types) == "insect"),2),
+                              rep(which(unique(types) == "sour rot"),2),
+                              rep(which(unique(types) == "extern"),2))
+select.categories <- apply(indices.unique.types, c(2,1),function(z)unique(types)[z]) |> t()
+
+```
+
+We can now create a data frame with all the pairwise distances, together with the couple of categories they belong to. It is then stored in the object `df_plot`, which will then be used for plotting.
+```{r create dataframe with distances}
+
+
+df <-  reshape2::melt(data = df, varnames = c("sample_1", "sample_2")) |> 
+  filter(sample_1 != sample_2) |> 
+  # distinct() |> # removes the duplicates, as just explained
+  left_join(x = _, y = data.frame(samp =vars, type = types), by = c("sample_1" = "samp")) |> 
+  left_join(x = _, y = data.frame(samp =vars, type = types), by = c("sample_2" = "samp")) |> 
+  rowwise() |>
+  mutate(interaction =factor( paste(type.x, type.y, sep = "-")))
+df_plot <- data.frame()
+for(i in 1:nrow(select.categories))
+{
+  df_plot <- rbind(df_plot,
+                   df |> filter(type.x == select.categories[i, 1] & type.y == select.categories[i, 2]))
+}
+
+
+```
+
+We can now plot the $\beta-$diversity indices but grouped by pairs of types. For instance, _insect-sour rot_ shows all the indices between an insect
+
+```{r plots}
+
+## violin plot
+ggplot(df_plot, aes(x = interaction, y  = value, fill  = interaction)) +
+  geom_violin()+ 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+# ggsave("Figures/comparisons_distr_beta_diversity_violin.pdf")
+
+## boxplot
+ggplot(df_plot, aes(x = interaction, y  = value, fill  = interaction)) +
+  geom_boxplot()+ 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+# ggsave("Figures/comparisons_distr_beta_diversity_boxplot.pdf")
+
+## kernel density estimate
+ggplot(df_plot, aes(x  = value, col  = interaction)) +
+  geom_density()
+# ggsave("Figures/comparisons_distr_beta_diversity_densities.pdf")
+
+
+```
+
+### References
+
