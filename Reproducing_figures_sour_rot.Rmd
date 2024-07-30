@@ -7,6 +7,8 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+# extension in which the plots are saved
+ext = ".pdf"
 ```
 
 We first load and preprocess the data and as well as import the package [`metacoder`](https://github.com/grunwaldlab/metacoder).
@@ -42,7 +44,7 @@ obj <- parse_tax_data(dfSourRot[, -c(1:4)], # we do not consider the columns cor
 
 We then compute the necessary tables that will then be used to display the absolute counts of each ITS. This is intrisically not normalized and comparison must be done with care. Indeed, by simply sampling more in one of the group would result in an imbalance in terms of counts, which may or may not be related to a difference in the distribution of the species in the various groups. 
 
-```{r}
+```{r preliminary computations}
 
 obj$data$tax_abund <- calc_taxon_abund(obj, "tax_data", cols = vars)
 obj$data$tax_occ <- calc_n_samples(obj, "tax_abund", groups = types, cols = vars)
@@ -73,7 +75,7 @@ We then plots three heat trees that reflect the abundance. In this first three p
             layout = "davidson-harel", # The primary layout algorithm
             initial_layout = "reingold-tilford",
             edge_color_interval =  range_col, 
-            output_file = paste0("Figures/heat_tree_extern", ".pdf"))
+            output_file = paste0("Figures/heat_tree_extern", ext))
   
   set.seed(1) # This makes the plot appear the same each time it is run 
   heat_tree(obj, 
@@ -87,7 +89,7 @@ We then plots three heat trees that reflect the abundance. In this first three p
             layout = "davidson-harel", # The primary layout algorithm
             initial_layout = "reingold-tilford",
             edge_color_interval =  range_col, 
-            output_file = paste0("Figures/heat_tree_insect", ".pdf"))
+            output_file = paste0("Figures/heat_tree_insect", ext))
   set.seed(1) # This makes the plot appear the same each time it is run 
   heat_tree(obj, 
             node_label = taxon_names,
@@ -100,7 +102,7 @@ We then plots three heat trees that reflect the abundance. In this first three p
             layout = "davidson-harel", # The primary layout algorithm
             initial_layout = "reingold-tilford",
             edge_color_interval =  range_col, 
-            output_file = paste0("Figures/heat_tree_sour_rot", ".pdf"))
+            output_file = paste0("Figures/heat_tree_sour_rot", ext))
 
 ```
 
@@ -116,19 +118,21 @@ The next three plots are the exact same, but without a common color scale. This 
             node_size_axis_label = "ITS genotypes",
             node_color_axis_label = "Samples with reads",
             layout = "davidson-harel", # The primary layout algorithm
-            initial_layout = "reingold-tilford")
+            initial_layout = "reingold-tilford", 
+            output_file = paste0("Figures/heat_tree_extern_ownscale", ext))
   
   set.seed(1) # This makes the plot appear the same each time it is run 
   heat_tree(obj, 
             node_label = taxon_names,
             node_size = n_obs,
             node_color = insect,
-            title = 'Drosophilia spp',
+            title = 'Drosophilia spp.',
             title_size = 0.04,
             node_size_axis_label = "ITS genotypes",
             node_color_axis_label = "Samples with reads",
             layout = "davidson-harel", # The primary layout algorithm
-            initial_layout = "reingold-tilford")
+            initial_layout = "reingold-tilford", 
+            output_file = paste0("Figures/heat_tree_insect_ownscale", ext))
   set.seed(1) # This makes the plot appear the same each time it is run 
   heat_tree(obj, 
             node_label = taxon_names,
@@ -139,7 +143,8 @@ The next three plots are the exact same, but without a common color scale. This 
             node_size_axis_label = "ITS genotypes",
             node_color_axis_label = "Samples with reads",
             layout = "davidson-harel", # The primary layout algorithm
-            initial_layout = "reingold-tilford")
+            initial_layout = "reingold-tilford", 
+            output_file = paste0("Figures/heat_tree_sour_rot_ownscale", ext))
 
 ```
 
@@ -162,13 +167,16 @@ A taxon colored brown is more abundant in the group in the column while a taxon 
 
 ```{r plot differential heat trees}
 
+custom_cols <- palette.colors()[c(6, 9, 7)] # subset of the Okabe-Ito palette
 set.seed(1)
 heat_tree_matrix(obj,
                  data = "diff_table",
                  node_size = n_obs, # n_obs is a function that calculates, in this case, the number of OTUs per taxon
                  node_label = taxon_names,
                  node_color = log2_median_ratio, # A column from `obj$data$diff_table`
-                 node_color_range = diverging_palette(), # The built-in palette for diverging data
+                 node_color_range = custom_cols, # palette different
+                 row_label_color = custom_cols[length(custom_cols)],
+                 col_label_color = custom_cols[1],
                  node_color_trans = "area", # The default is scaled by circle area
                  node_color_interval = c(-3, 3), # The range of `log2_median_ratio` to display
                  edge_color_interval = c(-3, 3), # The range of `log2_median_ratio` to display
@@ -176,20 +184,22 @@ heat_tree_matrix(obj,
                  node_color_axis_label = "Log 2 ratio median proportions",
                  layout = "davidson-harel", # The primary layout algorithm
                  initial_layout = "reingold-tilford", # The layout algorithm that initializes node locations
-                 output_file = paste0("Figures/relative_log2_differential_heat_tree", ".pdf"))
+                 output_file = paste0("Figures/relative_log2_differential_heat_tree", ext))
 heat_tree_matrix(obj,
                  data = "diff_table",
                  node_size = n_obs, # n_obs is a function that calculates, in this case, the number of OTUs per taxon
                  node_label = taxon_names,
                  node_color = median_diff, # A column from `obj$data$diff_table`
-                 node_color_range = diverging_palette(),
+                 node_color_range = custom_cols, # palette different
+                 row_label_color = custom_cols[length(custom_cols)],
+                 col_label_color = custom_cols[1],
                  node_color_interval = c(-0.75, 0.75), # The range of `median_ratio` to display
                  edge_color_interval = c(-0.75, 0.75), # The range of `median_ratio` to display
                  node_size_axis_label = "ITS genotypes",
                  node_color_axis_label = "Difference of median proportions",
                  layout = "davidson-harel", # The primary layout algorithm
                  initial_layout = "reingold-tilford",
-                 output_file = paste0("Figures/relative_median_differential_heat_tree", ".pdf"))
+                 output_file = paste0("Figures/relative_median_differential_heat_tree", ext))
 
 
 ```
