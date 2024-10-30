@@ -25,6 +25,17 @@ types <- lsSourRot$types
 
 rm(lsSourRot)
 ```
+
+We first show the number of samples for each modality. 
+
+```{r show sample sizes}
+types_names <- c("extern" = "healthy berries", "insect" = "Drosophilia suzuki", "sour rot" = "Sour rot affected berries")
+samp_sizes <- table(types) 
+names(samp_sizes) <- types_names
+as.data.frame(samp_sizes) |> rename(Modality = Var1, "Sample size" = Freq) |> knitr::kable()
+```
+
+
 Then, we create an object that can be parsed by the utilities of `metacoder`. It essentially follows the steps described in the [documentation](https://grunwaldlab.github.io/metacoder_documentation/index.html) of the package.
 ```{r parse metacoder, message=FALSE}
 # creates a column that contains taxonomic information
@@ -159,11 +170,18 @@ obj$data$its_table <- calc_obs_props(obj, data = "tax_data", cols = vars) # for 
 obj$data$tax_table <- calc_taxon_abund(obj, data = "its_table", cols = vars)
 # to compare differences between groups and then plot it
 obj$data$diff_table <- compare_groups(obj, data = "tax_table", cols = vars, groups = types)
+obj <- mutate_obs(obj, "diff_table",
+                  wilcox_p_value = p.adjust(wilcox_p_value, method = "fdr"))
 
+obj$data$diff_table$log2_median_ratio[obj$data$diff_table$wilcox_p_value > 0.05] <- 0
+obj$data$diff_table$median_diff[obj$data$diff_table$wilcox_p_value > 0.05] <- 0
 ```
+
+Note that we have only kept the differences that were significant, the other ones being set to 0. More precisely, we use a Mann-Whitney test, with an adjustment for multiple testing based on the _Benjamini-Hochberg_ procedure (R function `p.adjust(method = "fdr")`).
+
 Now, it is possible to compare the groups pairwise in terms of proportion within each group (healthy berries, sour rot symptomatic berries and Drosophilia), which all are on the same scale, namely the interval $[0,1]$. For each edge (i.e. taxon), the median of the proportion of the corresponding taxon in the group considered is computed. Then, in the first plot, the log (in base 2) of the ratio of the two medians (or equivalently, of the differences of the logs) is represented on the color scale, for each pair of groups. Note that, by convention, if any of the two medians is 0, then 0 is displayed. In the second plot, the difference between the two median proportion is plotted. Since the two medians both are in the interval $[0,1]$, the difference is in the interval $[-1,1]$. 
 
-A taxon colored brown is more abundant in the group in the column while a taxon colored green is more abundant in group of the row; see also the color of the labels of rows and columns. See this [paragraph](https://grunwaldlab.github.io/metacoder_documentation/faq.html#differential-heat-trees-with-compare_groups-which-color-is-which-treatment) for implementation details and further clarifications about differential heat trees implemented in `metacoder`. 
+A taxon colored blue is more abundant in the group in the column while a taxon colored orange is more abundant in group of the row; see also the color of the labels of rows and columns. See this [paragraph](https://grunwaldlab.github.io/metacoder_documentation/faq.html#differential-heat-trees-with-compare_groups-which-color-is-which-treatment) for implementation details and further clarifications about differential heat trees implemented in `metacoder`. 
 
 ```{r plot differential heat trees}
 
@@ -201,6 +219,22 @@ heat_tree_matrix(obj,
                  initial_layout = "reingold-tilford",
                  output_file = paste0("Figures/relative_median_differential_heat_tree", ext))
 
+
+```
+
+We also display the resulting $p-$values associated with all the taxon with significant differences in the various modalities.
+
+```{r table significant differences}
+names_taxon <-  obj$data$class_data |> select(taxon_id, tax_name, tax_rank) |> distinct()
+obj$data$diff_table |> 
+    filter(wilcox_p_value < 0.05 & !is.na(wilcox_p_value) ) |>
+    select(taxon_id, treatment_1, treatment_2, wilcox_p_value, median_diff) |> 
+    filter(median_diff != 0 ) |> 
+    left_join(names_taxon, by = "taxon_id") |>
+    select(- taxon_id, - tax_rank) |> 
+    relocate(tax_name, treatment_1, treatment_2) |>
+    rename("Taxon name" = tax_name, "Modality 1 (row)" =  treatment_1, "Modality 2 (col)" =  treatment_2, "p-val." = wilcox_p_value , "median differences" = median_diff) |> 
+    knitr::kable()
 
 ```
 
