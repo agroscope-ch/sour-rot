@@ -53,6 +53,18 @@ obj <- parse_tax_data(dfSourRot[, -c(1:4)], # we do not consider the columns cor
 
 #### Abundance
 
+First, we briefly explore the number of hits for each sample and each modality.
+
+```{r hits in samples}
+samp_indices <- lapply(dfSourRot, is.numeric) |> unlist()
+sample_hits <- cbind.data.frame(colSums(dfSourRot[,samp_indices]), types)
+names(sample_hits) <- c("hits", "type")
+
+ggplot(sample_hits, mapping = aes(y = hits, x = type, fill = type)) +
+    geom_boxplot()
+```
+
+
 We then compute the necessary tables that will then be used to display the absolute counts of each ITS. This is intrisically not normalized and comparison must be done with care. Indeed, by simply sampling more in one of the group would result in an imbalance in terms of counts, which may or may not be related to a difference in the distribution of the species in the various groups. 
 
 ```{r preliminary computations}
