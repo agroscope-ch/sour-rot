@@ -1,5 +1,5 @@
 ---
-title: "Reproducing the figures of Hofstetter et al."
+title: "Reproducing the figures of Hévin et al."
 author: "Matthieu Wilhelm"
 date: "`r Sys.Date()`"
 output: html_document
