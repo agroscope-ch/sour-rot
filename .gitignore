@@ -5,3 +5,13 @@
 sour-rot-publication.Rproj
 ReviewComments.md
 ReviewComments.html
+Figures/AuxFiles/
+beta_diversity_comp.R 
+bibliography.bib 
+check_diff_data_sour-rot.R 
+check_names.csv 
+data_correspondance_2.csv 
+data_correspondance.csv 
+Load_Process_S3.R 
+Reproducing_figures_Excel_sour-rot.R 
+Reproducing_figures_Seb_sour-rot.R 

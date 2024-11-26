@@ -3,7 +3,7 @@ library(tidyverse)
 library(readxl)
 library(stringr)
 
-LoadSourRot <- function(normalization = FALSE )
+LoadSourRot <- function(normalization = FALSE, flag_suzuki = FALSE )
 {
   
   # normalization: if TRUE, returns the proportion of species in each sample and not the absolute number of occurrences
@@ -51,10 +51,19 @@ LoadSourRot <- function(normalization = FALSE )
   ## For each sample, we deduce from its name what is its type ("insect", "extern" or "sour rot")
   ## The patterns are provided as regular expressions
   types <- rep(NA,length(vars))
-  pat <- c("male|female|other", 
-           "[A-Z]\\d{2}C", # Maj-2digits-C
-           "[A-Z]\\d+?B") # Maj-aussi peu de digits que possible-B
-  typesNames <- c("insect", "extern", "sour rot")
+  if(flag_suzuki){
+    pat <- c("male|female",
+             "other",
+             "[A-Z]\\d{2}C", # Maj-2digits-C
+             "[A-Z]\\d+?B") # Maj-aussi peu de digits que possible-B
+    typesNames <- c("Suzukii", "Endemic", "extern", "sour rot")
+  } else{
+    pat <- c("male|female|other", 
+             "[A-Z]\\d{2}C", # Maj-2digits-C
+             "[A-Z]\\d+?B") # Maj-aussi peu de digits que possible-B
+    typesNames <- c("insect", "extern", "sour rot")
+  }
+
   cbind(pat, typesNames)
   for(i in 1:length(pat))
   {

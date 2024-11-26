@@ -11,6 +11,83 @@ knitr::opts_chunk$set(echo = TRUE)
 ext = ".pdf"
 ```
 
+In the aforementioned paper, the data of three experiments are considered. The data are are gathered in three different files:
+
+- TABLE S1_COM1.xlsx
+
+
+### Experience 1
+
+We first load the data described in the first Table and do some basic processing, and in particular, we extract the name of the species.
+
+```{r load table S1}
+
+dfExp1 <- read_excel(path = "Data/TABLE S1_COM1.xlsx", skip = 1)
+dfExp1 <-dfExp1 |> 
+  # selects interesting columns
+  select(`16S or ITS sequences named after GenBank BLAST top score(s) result(s) and taxon current names  (LPSN for bacteria or Mycobank/Index Fungorum for fungi )`, A, B, C, D, `Order; family (after GenBank)`) |>
+  # changes the way hits are stored; instead, on row corresponds to one pair hit/category
+  pivot_longer(cols = c(A, B, C, D), names_to = "Modality", values_to = "hits") |>
+  mutate(Modality = factor(Modality)) |>
+  # rename unconvinent columns
+  rename(Species =`16S or ITS sequences named after GenBank BLAST top score(s) result(s) and taxon current names  (LPSN for bacteria or Mycobank/Index Fungorum for fungi )`,
+         OrderFamily = `Order; family (after GenBank)`) |>
+  # gets the order and the family
+  separate_wider_delim(OrderFamily, delim = ";", names = c("Order", "Family")) |>
+  # removes the unnecessary column
+  mutate(OrderFamily = NULL) |>
+  # extract the names to appear in the Figures
+  mutate(Name = gsub(" .*$", "", x = Species) |> gsub("\\[|\\]|sp\\.", "", x=_))
+```
+
+We then rename the modalities (see the legend in the first raw of the original file) and count the number of hits in each modality. 
+
+```{r change levels modality}
+# Changes the legend of the modalities to make it more transparent
+levels(dfExp1$Modality) <- list("Sour rot Grisons" = "A", 
+                                  "Sour rot Vaud" = "B", 
+                                  "Sour rot Chasselas Nyon" = "C",
+                                  "Grey mould Chasselas Vaud" = "D")
+
+dfExp1_GroupedName <- dfExp1 |> 
+  select(Name, Modality, hits) |>
+  group_by(Modality, Name) |> 
+  summarise(hits = sum(hits, na.rm = T))
+```
+
+We transform that into proportions to allow for comparisons and we chose a color scale that allows the distinction between various species as much as possible. 
+
+
+```{r compute proportions Exp 1}
+
+dfExp1_GroupedName_Proportions <- dfExp1_GroupedName |> group_by(Modality) |> reframe( Name = Name, Proportion = hits/sum(hits, na.rm = T)) 
+cols = colors <- c(RColorBrewer::brewer.pal(12, "Set3"), "#FF6347", "#4682B4")
+groups_name <- dfExp1_GroupedName_Proportions$Name |> unique() |> sort(decreasing = T)
+
+```
+
+Finaly, we plot the various proportions in a bar plot, that we also save in a 
+
+```{r}
+
+ggplot(dfExp1_GroupedName_Proportions, mapping = aes(x = Modality, fill = Name, y = Proportion)) +
+  geom_bar(stat = "identity", width = .3) +
+  scale_y_continuous(labels = scales::percent_format(), breaks = seq(0,1, by = 0.1)) +  # Affiche l'axe Y en pourcentage si nécessaire
+  scale_x_discrete(limits = c( "Grey mould Chasselas Vaud","Sour rot Chasselas Nyon", "Sour rot Grisons","Sour rot Vaud"), labels =c( "Grey mould\n Chasselas Vaud","Sour rot\nChasselas Nyon",  "Sour rot Grisons","Sour rot Vaud"))+
+  labs(x = "Modality", y = "Proportion", fill = "Species") +
+  scale_fill_manual( values =cols ) +
+  theme_minimal()
+ggsave(filename = "Figures/Experience1_proportions.eps")
+
+
+```
+
+
+
+
+### Experience 3
+
+
 We first load and preprocess the data and as well as import the package [`metacoder`](https://github.com/grunwaldlab/metacoder).
 
 ```{r loading, message=FALSE}
