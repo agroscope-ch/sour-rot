@@ -6,86 +6,618 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-# extension in which the plots are saved
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(readxl)
+library(plotly) # for the function ggplotly that creates interactive plots from ggplots
+library(htmlwidgets) # for the function saveWidget that saves interactive plots
+
 ext = ".pdf"
+# size of the plots that are saved
+wd = 8
+hei = 5
 ```
+### Introduction
 
-In the aforementioned paper, the data of three experiments are considered. The data are are gathered in three different files:
+In the aforementioned paper, the data of three different settings are considered. The corresponding data are are gathered in four different files, corresponding to different Figures in the paper:
 
-- TABLE S1_COM1.xlsx
+- `TABLE S1_COM1.xlsx`: Figure 1
+- `TABLE_S2_COM2.xlsx`: Figure 2-6
+- `TABLE_S3_COM3.xlsx`: Figure 7 
+- `data_sour_rot.xlsx`: Figure 8, 9 and 10
+
+The file `data_sour_rot.xlsx` gathers data from the same study as the `TABLE_S3_COM3.xlsx` but with a different resolution. In the file `TABLE_S3_COM3.xlsx`, the number of hits of each detected species is aggregated (i.e. summed) over 4 modalities (`A` to `D`), irrespective of the sample itself (i.e. the berry or the insect). In `data_sour_rot.xlsx`, the number of hits is given for each species and _each sample_ (and not aggregated over modalities), but only the samples of the modalities `B`, `C` and `D` are considered.
+
+The code to reproduce the Figures of the paper is provided here. In addition to the code, an interactive version of the plots is provided, so that details of the plots can be better explored. 
+
+Throughout the paper, the color used to display genera and orders of the microbes detected are separated in three categories:
+
+- _bacteria_, with a red color scale
+- _Saccharomycotina_ with a green color scale; we chose to distinguish them because they are usually associated to sour rot symptoms
+- _Fungi that are not Saccharomycotina_ with a [cividis](https://www.ncl.ucar.edu/Document/Graphics/ColorTables/Images/cividis_labelbar.png) colorscale. 
+
+In general, the genera and orders displayed in Figure 1-6 and 10 are **consistent**: the same colors display the same genera or orders for all the Figures, and the colors of the orders correspond to the color of one of the genus within this order. This consistency is only approximate for the Figure 7.
+
+The Figures 1-7 and 10 are saved in three different formats: `.png` for a quick view, `.eps` for the journal and `.html` for an interactive version, allowing for zooming and details about the displayed values. 
 
 
-### Experience 1
+### Load data sets of Study 1 \& 2: _Fungi associated with grapes symptomatic for sour rot and grey mould_ and _Evolution of the microbiome on grapes in respect of wounds and vectors_
 
 We first load the data described in the first Table and do some basic processing, and in particular, we extract the name of the species.
 
 ```{r load table S1}
 
-dfExp1 <- read_excel(path = "Data/TABLE S1_COM1.xlsx", skip = 1)
-dfExp1 <-dfExp1 |> 
+dfExp1 <- read_excel(path = "Data/TABLE S1_COM1_NEW_prMW.xlsx", skip = 1)
+dfExp1 <- dfExp1 |> 
   # selects interesting columns
-  select(`16S or ITS sequences named after GenBank BLAST top score(s) result(s) and taxon current names  (LPSN for bacteria or Mycobank/Index Fungorum for fungi )`, A, B, C, D, `Order; family (after GenBank)`) |>
+  select(`Sequences 16S or ITS named after verification (in LPSN for bacteria and Mycobank/Index Fungorum for fungi) of the name(s) obtained by sequence similarity searches in GenBank.`, A, B, C, D, `Order; family (after GenBank)`) |>
   # changes the way hits are stored; instead, on row corresponds to one pair hit/category
   pivot_longer(cols = c(A, B, C, D), names_to = "Modality", values_to = "hits") |>
   mutate(Modality = factor(Modality)) |>
   # rename unconvinent columns
-  rename(Species =`16S or ITS sequences named after GenBank BLAST top score(s) result(s) and taxon current names  (LPSN for bacteria or Mycobank/Index Fungorum for fungi )`,
+  rename(Species =`Sequences 16S or ITS named after verification (in LPSN for bacteria and Mycobank/Index Fungorum for fungi) of the name(s) obtained by sequence similarity searches in GenBank.`,
          OrderFamily = `Order; family (after GenBank)`) |>
   # gets the order and the family
   separate_wider_delim(OrderFamily, delim = ";", names = c("Order", "Family")) |>
   # removes the unnecessary column
   mutate(OrderFamily = NULL) |>
-  # extract the names to appear in the Figures
-  mutate(Name = gsub(" .*$", "", x = Species) |> gsub("\\[|\\]|sp\\.", "", x=_))
+  # removes some initial spaces and brackets
+  mutate(Genus = gsub(" .*$", "", x = Species) |> gsub("\\[|\\]", "", x=_)) |> 
+  # changes unconvential spaces into normal ones
+  mutate(across(.cols = c(Genus, Family, Species, Order), .fns = ~ gsub("\\p{Zs}", " ", x =., perl = TRUE))) |>
+  # removes spaces from the columns Genus, Family and Order
+  mutate( across(.cols = c(Genus, Family, Order), .fns = ~ gsub(" ", "", x =.))) 
 ```
 
-We then rename the modalities (see the legend in the first raw of the original file) and count the number of hits in each modality. 
+We then rename the modalities (see the legend in the first raw of the file `TABLE S1_COM1.xlsx`). 
 
 ```{r change levels modality}
-# Changes the legend of the modalities to make it more transparent
 levels(dfExp1$Modality) <- list("Sour rot Grisons" = "A", 
-                                  "Sour rot Vaud" = "B", 
-                                  "Sour rot Chasselas Nyon" = "C",
-                                  "Grey mould Chasselas Vaud" = "D")
+                                "Sour rot Vaud" = "B", 
+                                "Sour rot Chasselas Nyon" = "C",
+                                "Grey mould Chasselas Vaud" = "D")
+```
 
+We then load the second dataset.
+
+
+```{r load Exp2}
+
+### Study 2, Figure 2-7
+
+dfExp2 <- read_excel(path = "Data/TABLE_S2_COM2_NEW_prMW.xlsx", skip = 1)
+## removing the raw containing totals
+ind_remove <- dfExp2 |> pull(`16S or ITS sequences named based on GenBank BLAST top score(s) after verification of the taxon current names in taxonomic databases (LPSN for bacteria and Mycobank/Index Fungorum for fungi)`) |> grep(pattern = "otal", x =_)
+dfExp2 <- dfExp2[-ind_remove,]
+
+# get the columns starting with a capital letter followed by a space (which correspond to the hits)
+def_var <- grep("^[A-Z]\\s", names(dfExp2), value = TRUE)
+dfExp2 <- dfExp2 |> select(`16S or ITS sequences named based on GenBank BLAST top score(s) after verification of the taxon current names in taxonomic databases (LPSN for bacteria and Mycobank/Index Fungorum for fungi)`,
+                           all_of(def_var),`Order; family (after GenBank)`) |> 
+  # renames the columns corresponding to the studies by the initial capital letter (which characterizes these columns)
+  rename_with(.fn = ~ str_sub(.x, start = 1L, end = 1L),.cols =  matches("^[A-Z]\\s")) |> 
+  # transform the dataset in tidy version
+  pivot_longer(cols = LETTERS[1:length(def_var)], names_to = "Experiment", values_to = "hits")
+
+```
+
+In the following, we rename the different modalities and create an object `df_categories` that will be used as a lookup table for the names of the categories.
+```{r df_categories Exp2}
+
+# Replacement of multiple space with underscores
+def_var <- gsub(" +", "_", def_var)
+
+# Splitting and turn into data.frame
+df_categories <- do.call(rbind, strsplit(def_var, "_")) |> as.data.frame(stringsAsFactors = TRUE) 
+# Renaming the columns
+names(df_categories) <- c("Experiment", "State", "Protection", "Week")
+# creating the explicit labels
+lev_state <- c("HA" = "Healthy berries adj.", "UW" = "Unwounded", "W" = "Wounded")
+lev_protect <- c("P" = "Protected", "UP" = "Unprotected")
+
+df_categories <- df_categories |> 
+  mutate(StateLabel = plyr::mapvalues(State, from = names(lev_state), to = lev_state),
+         ProtectionLabel =  plyr::mapvalues(Protection, from = names(lev_protect), to = lev_protect))
+```
+
+```{r dfExp continued}
+dfExp2 <-  dfExp2 |> 
+  left_join(y = df_categories, by = "Experiment") |>
+  # rename unconvinent columns
+  rename(Species =`16S or ITS sequences named based on GenBank BLAST top score(s) after verification of the taxon current names in taxonomic databases (LPSN for bacteria and Mycobank/Index Fungorum for fungi)`,
+         OrderFamily = `Order; family (after GenBank)`) |>
+  # gets the order and the family
+  separate_wider_delim(OrderFamily, delim = "; ", names = c("Order", "Family")) |>
+  mutate( Family = factor(Family, levels = sort(unique(Family))),Order = factor(Order, levels = sort(unique(Order))) ) |> 
+  # removes the unnecessary column
+  mutate(OrderFamily = NULL) |>
+  # removes some initial spaces and brackets
+  mutate(Genus = gsub(" .*$", "", x = Species) |> gsub("\\[|\\]", "", x=_)) |> 
+  # removes unnecessary (i.e. with no hits) rows
+  filter(! is.na(hits))
+```
+
+We can now create the color palette that will be used for the Figures 1-7 and 10. To make sure that it is consistent throughout the experiments 1 and 2 (it is only approximately consistent for the third experiment), we need to first have loaded the data so that any genera appearing has a single color assigned. The detailed code is available in the file `creating_palette_colors.R`. Here, we only source it.
+
+```{r source palette colors}
+
+### Creating the color palette
+source(file = "creating_palette_colors.R") # creates the object df_col, a data frame containing the colors associated to each Genera and Order appearing in Studies 1 and 2 (Table S1 and S2).
+
+```
+
+To have a consistent aspect of the Figures, we also need to ensure the same order in which the genera and orders are displayed in the Figures.
+
+```{r levels Genus and Order Exp. 1 and 2}
+
+dfExp1$Genus <- factor(dfExp1$Genus, levels = levels(df_col$Genus)) |> droplevels()
+dfExp1$Order <- factor(dfExp1$Order, levels = levels(df_col$Order)) |> droplevels()
+
+dfExp2$Genus <- factor(dfExp2$Genus, levels = levels(df_col$Genus)) |> droplevels()
+dfExp2$Order <- factor(dfExp2$Order, levels = levels(df_col$Order)) |> droplevels()
+```
+
+### Figure of first study
+
+We create some intermediary data frames that will then be used to produce the Figure 1.
+
+```{r df Figure 1}
 dfExp1_GroupedName <- dfExp1 |> 
-  select(Name, Modality, hits) |>
-  group_by(Modality, Name) |> 
+  select(Genus, Modality, hits) |>
+  group_by(Modality, Genus) |> 
   summarise(hits = sum(hits, na.rm = T))
+
+dfExp1_GroupedName_Proportions <- dfExp1_GroupedName |> group_by(Modality) |> reframe( Genus = Genus, Proportion = hits/sum(hits, na.rm = T)) 
+# data.frame to count the number of hits per modality 
+Exp1_Samp_Sizes <- dfExp1_GroupedName |> group_by(Modality) |> summarise(Size = sum(hits, na.rm = T))  |> 
+  mutate(label = paste("n =", Size))
 ```
 
-We transform that into proportions to allow for comparisons and we chose a color scale that allows the distinction between various species as much as possible. 
+We can now produce the Figure 1 and save it.
 
-
-```{r compute proportions Exp 1}
-
-dfExp1_GroupedName_Proportions <- dfExp1_GroupedName |> group_by(Modality) |> reframe( Name = Name, Proportion = hits/sum(hits, na.rm = T)) 
-cols = colors <- c(RColorBrewer::brewer.pal(12, "Set3"), "#FF6347", "#4682B4")
-groups_name <- dfExp1_GroupedName_Proportions$Name |> unique() |> sort(decreasing = T)
-
-```
-
-Finaly, we plot the various proportions in a bar plot, that we also save in a 
-
-```{r}
-
-ggplot(dfExp1_GroupedName_Proportions, mapping = aes(x = Modality, fill = Name, y = Proportion)) +
-  geom_bar(stat = "identity", width = .3) +
-  scale_y_continuous(labels = scales::percent_format(), breaks = seq(0,1, by = 0.1)) +  # Affiche l'axe Y en pourcentage si nécessaire
+```{r Figure 1}
+pl1 <- ggplot(dfExp1_GroupedName_Proportions, mapping = aes(x = Modality, fill = Genus, y = Proportion)) +
+  geom_bar(stat = "identity", col = "white", width = .3) +
+  scale_y_continuous(labels = scales::percent_format(), breaks = seq(0,1, by = 0.1), minor_breaks = seq(0.05, to = 0.95, by = 0.1)) +
   scale_x_discrete(limits = c( "Grey mould Chasselas Vaud","Sour rot Chasselas Nyon", "Sour rot Grisons","Sour rot Vaud"), labels =c( "Grey mould\n Chasselas Vaud","Sour rot\nChasselas Nyon",  "Sour rot Grisons","Sour rot Vaud"))+
-  labs(x = "Modality", y = "Proportion", fill = "Species") +
-  scale_fill_manual( values =cols ) +
-  theme_minimal()
-ggsave(filename = "Figures/Experience1_proportions.eps")
+  labs(x = "", y = "Proportion", fill = "Species") +
+  scale_fill_manual( values =df_col$ColName, breaks = df_col$Genus ) +
+  geom_text(data = Exp1_Samp_Sizes, 
+            aes(x = Modality, y = 1.05, label = label),
+            inherit.aes = FALSE,
+            vjust = 0, size = 3) +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_line(color = "grey70", linewidth = 0.6),
+    panel.grid.minor = element_line(color = "grey85", linewidth = 0.4),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank()
+  )
+pl1
+```
 
+
+```{r save Figure 1, echo= FALSE}
+ggsave("Figures/Figure1.png", plot = pl1, width = wd, height = hei)
+ggsave("Figures/Figure1.eps", plot = pl1, device = cairo_ps, width = wd, height = hei)
+saveWidget(ggplotly(pl1) , file = "Figures/Figure1.html", libdir = "AuxFiles/")
+
+```
+
+### Figure of second study 
+
+The Figures 2-6 are based on the second study (essentially the object `dfExp2`). 
+
+The Figure 2 displays the evolution of the relative abundance (expressed in %) of sour rot associated microorganisms in wounded and unprotected grape berries of Chasselas over a three week period after their wounding, corresponding to Experiments F, G and J in Table S2 for the classification assigned to our sequences. Genera that are not within the Saccharomycotina are gathered in a single category. 
+
+```{r Figure 2}
+# data.frame for the Figure 2
+dfExp2_Figure2 <- dfExp2 |> 
+  left_join(y = df_col, by = c("Genus", "Order")) |> 
+  filter(Protection == "UP", State == "W") |> 
+  group_by(Week,type) |>
+  summarise(hits = sum(hits)) |> 
+  group_by(Week) |> reframe( type = type, Proportion = hits/sum(hits, na.rm = T), hits)
+# data.frame of the sample sizes
+dfExp2_Figure2_Size <- dfExp2_Figure2 |> group_by(Week) |> summarise(hits = sum(hits)) |> mutate(label = paste("n =", hits))
+
+
+pl2 <- ggplot(data = dfExp2_Figure2,  mapping = aes(x = Week, fill = type, y = Proportion)) +
+    geom_bar(stat = "identity", width = .3, col = "white") +
+  scale_y_continuous(labels = scales::percent_format(), breaks = seq(0,1, by = 0.1), minor_breaks = seq(0.05, to = 0.95, by = 0.1)) +
+    labs(x = "", y = "Proportion", fill = "Order", x = "") +
+  scale_fill_manual(values =df_col$Coltype, breaks = df_col$type ) +
+  scale_x_discrete(labels =paste("Week", 1:3)) +
+    geom_text(data = dfExp2_Figure2_Size, 
+              aes(x = Week, y = 1.05, label = label),
+              inherit.aes = FALSE,
+              vjust = 0, size = 3) +
+    theme_minimal() +
+  theme(
+      panel.grid.major = element_line(color = "grey70", linewidth = 0.6),  
+      panel.grid.minor = element_line(color = "grey85", linewidth = 0.4),
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank()
+    )
+pl2
+```
+
+
+```{r save Figure 2, echo = FALSE}
+ggsave("Figures/Figure2.png", plot = pl2, width = wd, height = hei)
+ggsave("Figures/Figure2.eps", plot = pl2, device = cairo_ps, width = wd, height = hei)
+saveWidget(ggplotly(pl2) , file = "Figures/Figure2.html", libdir = "AuxFiles/")
+
+```
+
+
+
+The Figure 3 displays the relative abundance of microorganisms isolated from unprotected grape clusters of Chasselas three weeks after the start of the experiment, corresponding to Experiments F, G and J in Table S2 for the classification assigned to our sequences.
+  
+```{r Figure 3}
+dfExp2_Figure3 <- dfExp2 |> 
+  filter(Protection == "UP", Week == 3) |> 
+  group_by(State,Order) |>
+  summarise(hits = sum(hits)) |> 
+  group_by(State) |> reframe(Order = Order, Proportion = hits/sum(hits, na.rm = T), hits)
+
+ 
+dfExp2_Figure3_Size <- dfExp2_Figure3 |> group_by(State) |> summarise(hits = sum(hits)) |> mutate(label = paste("n =", hits))
+
+
+
+pl3 <- ggplot(data = dfExp2_Figure3,  mapping = aes(x = State, fill = Order, y = Proportion)) +
+  geom_bar(stat = "identity", width = .3, col = "white") +
+  scale_y_continuous(labels = scales::percent_format(), breaks = seq(0,1, by = 0.1), minor_breaks = seq(0.05, to = 0.95, by = 0.1)) +
+  labs( y = "Proportion", fill = "Order", x = "") +
+  scale_fill_manual( values =df_col$ColOrder, breaks = df_col$Order ) +
+  scale_x_discrete(limits = c("W", "HA", "UW"), labels = c("Wounded\nsymptomatic\nberries" ,"Unwounded\nadjacent\nberries", "Unwounded\nberries") ) +
+  geom_text(data = dfExp2_Figure3_Size, 
+            aes(x = State, y = 1.05, label = label),
+            inherit.aes = FALSE,
+            vjust = -0.0, size = 3) +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_line(color = "grey70", linewidth = 0.6),  
+    panel.grid.minor = element_line(color = "grey85", linewidth = 0.4),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank()
+  )
+
+pl3
+```
+
+
+```{r save Figure 3, echo=FALSE}
+ggsave("Figures/Figure3.png", width = wd, height = hei)
+ggsave("Figures/Figure3.eps", device = cairo_ps, width = wd, height = hei)
+saveWidget(ggplotly(pl3) , file = "Figures/Figure3.html", libdir = "AuxFiles/")
+
+
+```
+
+We then show the Figure 4, which displays the evolution over three weeks of the microbial community inferred from the relative abundance (expressed in %) of fungal and bacterial orders present on the surface of unwounded berries from grape clusters of cv. Chasselas protected or not by a net in the vineyard plot of Nyon (see Table S2 for the classification of isolates at order rank), corresponding to Experiments H to L in Table S2 for the classification assigned to our sequences.
+
+
+```{r Figure 4}
+dfExp2_Figure4 <- dfExp2 |> 
+  filter(State == "UW") |> 
+  mutate(Week = paste("Week ", Week)) |> 
+  group_by(Week, Order, Protection) |>
+  summarise(hits = sum(hits)) |> 
+  group_by(Week, Protection) |> reframe(Week = Week, Protection = Protection, 
+                                        Order = Order, Proportion = hits/sum(hits, na.rm = T), hits)
+
+dfExp2_Figure4_Size <- dfExp2_Figure4 |> group_by(Protection, Week) |> summarise(hits = sum(hits)) |> mutate(label = paste("n =", hits))
+
+pl4 <- ggplot(data = dfExp2_Figure4,  mapping = aes(x = Protection, fill = Order, y = Proportion)) +
+   facet_wrap(~ Week) +
+   geom_bar(stat = "identity", col = "white", width = .3) +
+  scale_y_continuous(labels = scales::percent_format(), breaks = seq(0,1, by = 0.1), minor_breaks = seq(0.05, to = 0.95, by = 0.1)) +
+  labs( y = "Proportion", fill = "Order", x = "") +
+  scale_fill_manual( values =df_col$ColOrder, breaks = df_col$Order ) +
+  scale_x_discrete(limits = c("UP", "P"), labels = c("Netless" , "Net") ) +
+   geom_text(data = dfExp2_Figure4_Size, 
+             aes(x = Protection, y = 1.05, label = label),
+             inherit.aes = FALSE,
+             vjust = -0.0, size = 3) +
+   theme_minimal() +
+   theme(
+     panel.grid.major = element_line(color = "grey70", linewidth = 0.6),  
+     panel.grid.minor = element_line(color = "grey85", linewidth = 0.4),
+     panel.grid.major.x = element_blank(),
+     panel.grid.minor.x = element_blank()
+   )
+
+pl4
+```
+
+
+```{r save Figure 4, echo=FALSE}
+ggsave("Figures/Figure4.png", plot = pl4, width = wd, height = hei)
+ggsave("Figures/Figure4.eps", plot = pl4, device = cairo_ps, width = wd, height = hei)
+saveWidget(ggplotly(pl4) , file = "Figures/Figure4.html", libdir = "AuxFiles/")
+
+```
+
+
+
+The Figure 5 displays the evolution over three weeks of the microbial community inferred from the relative abundance of fungi and bacteria present in berries of Chasselas sampled from unprotected grape clusters of artificially wounded or intact berries in the vineyard plot of Nyon (thus excluding berries that are adjacent to symptomatic berries, corresponding to column G), corresponding to Experiments D-F and H-J in Table S2 for the classification assigned to our sequences.
+
+```{r Figure 5}
+dfExp2_Figure5 <- dfExp2 |> 
+  # Only unprotected grapes
+  filter(Protection == "UP") |>
+  # Only Wounded and Unwounded categories
+  filter(State != "HA") |> 
+  mutate(Week = paste("Week ", Week)) |>
+  mutate(State = plyr::mapvalues(State, from = c("W", "UW"), to = c("Wounded", "Unwounded")) |> droplevels()) |> 
+  group_by(Week, Order, State) |>
+  summarise(hits = sum(hits)) |> 
+  group_by(Week, State) |> reframe(Week = Week, State = State, 
+                                        Order = Order, Proportion = hits/sum(hits, na.rm = T), hits)
+
+dfExp2_Figure5_Size <- dfExp2_Figure5 |> group_by(State, Week) |> summarise(hits = sum(hits)) |> mutate(label = paste("n =", hits))
+
+pl5 <- ggplot(data = dfExp2_Figure5,  mapping = aes(x = State, fill = Order, y = Proportion)) +
+  facet_wrap(~ Week) +
+  geom_bar(stat = "identity", col = "white", width = .3) +
+  scale_y_continuous(labels = scales::percent_format(), breaks = seq(0,1, by = 0.1), minor_breaks = seq(0.05, to = 0.95, by = 0.1)) +
+  labs( y = "Proportion", fill = "Order", x = "") +
+  scale_fill_manual( values =df_col$ColOrder, breaks = df_col$Order ) +
+  # scale_x_discrete(limits = c("UP", "P"), labels = c("Netless" , "Net") ) +
+  geom_text(data = dfExp2_Figure5_Size,  # Utiliser le data.frame des annotations
+            aes(x = State, y = 1.05, label = label),
+            inherit.aes = FALSE,# Placer les annotations au-dessus des barres
+            vjust = -0, size = 3) +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_line(color = "grey70", linewidth = 0.6),  # Lignes principales
+    panel.grid.minor = element_line(color = "grey85", linewidth = 0.4),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank()# Lignes secondaires
+  )
+
+pl5
+```
+
+
+```{r save Figure 5, echo = FALSE}
+ggsave("Figures/Figure5.png", plot = pl5, width = wd, height = hei)
+ggsave("Figures/Figure5.eps", plot = pl5, device = cairo_ps, width = wd, height = hei)
+saveWidget(ggplotly(pl5) , file = "Figures/Figure5.html", libdir = "AuxFiles/")
+
+```
+
+The Figures 6A and 6B display the evolution over time of the microbial community inferred from the relative abundance of fungal and bacterial orders (A) and genera (B) in berries of Chasselas grapes sampled from artificially wounded grape clusters protected or not by a net in a vineyard plot at Nyon, corresponding to Experiments A-F in Table S2 for the classification assigned to our sequences.
+
+```{r Figure 6A}
+dfExp2_Figure6A <- dfExp2 |> 
+  filter(State == "W") |> 
+  mutate(Week = paste("Week ", Week)) |>
+  mutate(Protection = plyr::mapvalues(Protection, from = c("P", "UP"), to = c("Net", "Netless")) |> droplevels()) |> 
+  group_by(Week, Order, Protection) |>
+  summarise(hits = sum(hits)) |> 
+  group_by(Week, Protection) |> reframe(Week = Week, Protection = Protection, 
+                                   Order = Order, Proportion = hits/sum(hits, na.rm = T), hits)
+
+dfExp2_Figure6A_Size <- dfExp2_Figure6A |> group_by(Protection, Week) |> summarise(hits = sum(hits)) |> mutate(label = paste("n =", hits))
+
+pl6A <- ggplot(data = dfExp2_Figure6A,  mapping = aes(x = Protection, fill = Order, y = Proportion)) +
+  facet_wrap(~ Week) +
+  geom_bar(stat = "identity", col = "white", width = .3) +
+  scale_y_continuous(labels = scales::percent_format(), breaks = seq(0,1, by = 0.1), minor_breaks = seq(0.05, to = 0.95, by = 0.1)) +
+  labs( y = "Proportion", fill = "Order", x = "") +
+  scale_fill_manual( values =df_col$ColOrder, breaks = df_col$Order ) +
+  geom_text(data = dfExp2_Figure6A_Size,  
+            aes(x = Protection, y = 1.05, label = label),
+            inherit.aes = FALSE,
+            vjust = -0.0, size = 3) +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_line(color = "grey70", linewidth = 0.6),  
+    panel.grid.minor = element_line(color = "grey85", linewidth = 0.4),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank()
+  )+
+  ggtitle(label = "Wounded berries", subtitle = "Distribution of the order among samples")
+
+pl6A
+```
+
+
+```{r save Figure 6A, echo=FALSE}
+ggsave("Figures/Figure6A.png", plot = pl6A, width = wd, height = hei)
+ggsave("Figures/Figure6A.eps", plot = pl6A, device = cairo_ps, width = wd, height = hei)
+saveWidget(ggplotly(pl6A) , file = "Figures/Figure6A.html", libdir = "AuxFiles/")
+```
+
+```{r Figure 6B}
+#### Figure 6B
+
+dfExp2_Figure6B <- dfExp2 |> 
+  # Only unprotected grapes
+  # Only Wounded and Unwounded categories
+  filter(State != "UW") |> 
+  mutate(Week = paste("Week ", Week)) |>
+  mutate(Protection = plyr::mapvalues(Protection, from = c("P", "UP"), to = c("Net", "Netless")) |> droplevels()) |> 
+  group_by(Week, Genus, Protection) |>
+  summarise(hits = sum(hits)) |> 
+  group_by(Week, Protection) |> reframe(Week = Week, Protection = Protection, 
+                                        Genus = Genus, Proportion = hits/sum(hits, na.rm = T), hits)
+
+
+dfExp2_Figure6B_Size <- dfExp2_Figure6B |> group_by(Protection, Week) |> summarise(hits = sum(hits)) |> mutate(label = paste("n =", hits))
+
+pl6B <- ggplot(data = dfExp2_Figure6B,  mapping = aes(x = Protection, fill = Genus, y = Proportion)) +
+  facet_wrap(~ Week) +
+  geom_bar(stat = "identity", col = "white", width = .3) +
+  scale_y_continuous(labels = scales::percent_format(), breaks = seq(0,1, by = 0.1), minor_breaks = seq(0.05, to = 0.95, by = 0.1)) +
+  labs( y = "Proportion", fill = "Genera") +
+  scale_fill_manual( values =df_col$ColName, breaks = levels(dfExp2_Figure6B$Genus)) +
+  geom_text(data = dfExp2_Figure6A_Size,  
+            aes(x = Protection, y = 1.05, label = label),
+            inherit.aes = FALSE,
+            vjust = -0.0, size = 3) +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_line(color = "grey70", linewidth =  0.6),  
+    panel.grid.minor = element_line(color = "grey85", linewidth = 0.4),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank()
+  ) +
+  ggtitle(label = "Wounded berries", subtitle = "Distribution of the genera among samples")
+
+pl6B
+```
+
+
+```{r save Figure 6B, echo=FALSE}
+ggsave("Figures/Figure6B.png", plot = pl6B, width = wd, height = hei)
+ggsave("Figures/Figure6B.eps", plot = pl6B, device = cairo_ps, width = wd, height = hei)
+saveWidget(ggplotly(pl6B) , file = "Figures/Figure6B.html", libdir = "AuxFiles/")
+```
+
+### Figure of the third study
+
+The third study gathers data from four categories: healthy berries post-surface sterilization (internal), the surface of healthy non-sterilized berries (external),berries affected by sour rot (sour rot) of grapes cv. Gamay and of Drosophila spp. (insects) captured in a commercial vineyard in Begnins (VD, Switzerland).
+
+```{r Load data Exp 3}
+dfExp3 <- read_excel(path = "Data/TABLE_S3_COM3_NEW_prMW.xlsx", skip = 1)
+## removing the raw containing totals
+ind_remove <- dfExp3 |> pull(`Sequences 16S or ITS named after verification in Mycobank/Index Fungorum of the name(s) obtained by sequence similarity searches in GenBank.`) |> grep(pattern = "otal", x =_)
+dfExp3 <- dfExp3[-ind_remove,]
+
+# get names of the columns corresponding to the hits
+def_var <- grep("^[A-Z]\\s", names(dfExp3), value = TRUE)
+dfExp3 <- dfExp3 |> select(`Sequences 16S or ITS named after verification in Mycobank/Index Fungorum of the name(s) obtained by sequence similarity searches in GenBank.`,
+                           all_of(def_var),`Order; family (after Mycobank)`) |>
+  # rename the columns corresponding to the experiment with only the initial capital letter
+  rename_with(.fn = ~ str_sub(.x, start = 1L, end = 1L),.cols =  matches("^[A-Z]\\s")) |> 
+  pivot_longer(cols = LETTERS[1:length(def_var)], names_to = "Experiment", values_to = "hits")
+
+## In the following lines, we use the name of the variables to extract the information directly from their name
+
+# Replacement of multiple space with underscores
+def_var <- gsub(" +", "_", def_var)
+# transform sour_rot into sour-rot
+def_var <- gsub(pattern = "sour_rot", replacement = "sour-rot", def_var)
+# transform pulp_+_skin into pulp-skin
+def_var <- gsub(pattern = "pulp_+_skin", replacement = "pulp-skin", def_var, fixed = T)
+
+
+# Splitting and turn into data.frame which then be used also as labels for the plots
+df_categories <- do.call(rbind, strsplit(def_var, "_")) |> as.data.frame(stringsAsFactors = TRUE) 
+# Renaming the columns
+names(df_categories) <- c("Experiment", "type", "Sterilization", "Material")
+df_categories <- df_categories |> mutate(type = case_when(
+  type == "sour-rot" ~ "sour-rot",
+  type =="Dros" ~ "insect",
+  type == "heal" & Sterilization == "S" ~ "healthy sterilized\nberries",
+  type == "heal" & Sterilization == "US" ~ "extern"
+))
+df_categories <- df_categories |> select(Experiment, type)
+
+dfExp3 <-
+  dfExp3 |> 
+  # rename unconvinent columns
+  rename(Species =`Sequences 16S or ITS named after verification in Mycobank/Index Fungorum of the name(s) obtained by sequence similarity searches in GenBank.`,
+         OrderFamily = `Order; family (after Mycobank)`) |>
+  # gets the order and the family
+  separate_wider_delim(OrderFamily, delim = ";", names = c("Order", "Family")) |>
+  # transform NA into 0 (what they are!)
+  mutate(hits = if_else(is.na(hits), false = hits, true = 0)) |> 
+  # removes the unnecessary column
+  mutate(OrderFamily = NULL) |>
+  # removing potential brackets in the names
+  mutate(Species =  gsub("\\[|\\]", "", x=Species)) |> 
+  # rextract the genus (as "what is before the first space")
+  mutate(Genus = gsub(" .*$", "", x = Species)) |> 
+  # detect all non trivial spaces et replace them 
+  mutate(across(.cols = c(Genus, Family, Species, Order), .fns = ~ gsub("\\p{Zs}", " ", x =., perl = TRUE))) |>
+  mutate( across(.cols = c(Genus, Family, Order), .fns = ~ gsub(" ", "", x =.))) |>
+  # replace the cells containing "?" (regex: "\\?") by a NA
+  mutate(across(.cols = c(Genus, Family, Species, Order), .fns = ~ if_else(grepl(pattern = "\\?",x=. ), true = NA, false = .) )) |>
+  relocate(Order, Family, Genus, Species)
+
+```
+
+The Figure 7 displays the relative abundance of fungal orders in these four categories, corresponding to the data of Table S3. 
+
+```{r dfExp3 Figure 7}
+dfExp3_Figure7 <- dfExp3 |> 
+  mutate(across(.cols = -c(hits, Order), .fns = factor)) |> 
+  mutate(Experiment = plyr::mapvalues(Experiment, from = df_categories$Experiment, to = df_categories$type) |> droplevels()) |> 
+  group_by(Order, Experiment) |>
+  summarise(hits = sum(hits)) |> 
+  group_by(Experiment) |> reframe(Experiment = Experiment, Order = Order, Proportion = hits/sum(hits, na.rm = T), hits) |> 
+  # creates the category of Saccharomycotina
+  mutate(type = if_else(Order %in% c("Ascoideales", "Pichiales","Dipodascales", "Saccharomycodales", "Serinales", "Phaffomycetales" ), 
+                        true = "Saccharomycotina",false =  "Non-Saccharomycotina")) |>
+  distinct() |>
+  arrange(type, Order, desc(is.na(Order)))
+# We create the levels to have some order: first the type (Saccharomycotina or not) and the alphabetic order
+lev_order <- dfExp3_Figure7 |> select(type, Order) |> distinct() |> arrange(type, Order) |> pull(Order)
+dfExp3_Figure7$Order <- factor(dfExp3_Figure7$Order, levels = lev_order) 
+
+
+dfExp3_Figure7_Size <- dfExp3_Figure7 |> group_by(Experiment) |> summarise(hits = sum(hits)) |> mutate(label = paste("n =", hits))
+
+
+```
+
+We create the colors assigned to each of the genera and orders of the data set. It is only approximately consistent with the colors used in the Figures 1-6.
+
+```{r colors Figure 7}
+
+df_col_Exp3 <- dfExp3 |> select(Order) |> distinct() |> 
+  mutate(type = if_else(Order %in% c("Ascoideales", "Pichiales","Dipodascales", "Saccharomycodales", "Serinales", "Phaffomycetales" ), 
+  true = "Saccharomycotina",false =  "Non-Saccharomycotina")) |>
+                           distinct() |>
+                           arrange(is.na(Order),type, Order )
+cat_colExp3 <- table(df_col_Exp3$type)
+df_col_Exp3$ColOrder <- NA
+df_col_Exp3$ColOrder[df_col_Exp3$type == "Non-Saccharomycotina"] <- colorspace::divergingx_hcl(n =cat_colExp3["Non-Saccharomycotina"],palette = "Cividis")
+df_col_Exp3$ColOrder[df_col_Exp3$type == "Saccharomycotina"] <-
+  colorspace::sequential_hcl(n =(cat_colExp3["Saccharomycotina"]) + 2,palette = "Greens")[1:cat_colExp3["Saccharomycotina"]]
+df_col_Exp3$ColOrder[which(is.na(df_col_Exp3$Order))] <- "#000000"
 
 ```
 
 
 
 
-### Experience 3
+
+```{r Figure 7}
+pl7 <- ggplot(data = dfExp3_Figure7,  mapping = aes(x = Experiment, fill = Order, y = Proportion)) +
+  geom_bar(stat = "identity", color = "white", width = .3) +
+  scale_y_continuous(labels = scales::percent_format(), breaks = seq(0,1, by = 0.1), minor_breaks = seq(0.05, to = 0.95, by = 0.1)) +
+  labs( y = "Proportion", fill = "Order") +
+  scale_fill_manual( values =df_col_Exp3$ColOrder, breaks = df_col_Exp3$Order) +
+  # scale_x_discrete(limits = c("UP", "P"), labels = c("Netless" , "Net") ) +
+  geom_text(data = dfExp3_Figure7_Size,  # Utiliser le data.frame des annotations
+            aes(x = Experiment, y = 1.05, label = label),
+            inherit.aes = FALSE,# Placer les annotations au-dessus des barres
+            vjust = -0.0, size = 3) +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_line(color = "grey70", linewidth =  0.6),  # Lignes principales
+    panel.grid.minor = element_line(color = "grey85", linewidth = 0.4),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank()# Lignes secondaires
+  )
+
+pl7
+```
+
+
+```{r save Figure 7, echo=FALSE}
+ggsave("Figures/Figure7.png", plot = pl7, width = wd, height = hei)
+ggsave("Figures/Figure7.eps", plot = pl7, device = cairo_ps, width = wd, height = hei)
+saveWidget(ggplotly(pl7) , file = "Figures/Figure7.html", libdir = "AuxFiles/")
+
+```
+
 
 
 We first load and preprocess the data and as well as import the package [`metacoder`](https://github.com/grunwaldlab/metacoder).
@@ -326,4 +858,97 @@ obj$data$diff_table |>
     knitr::kable()
 
 ```
+
+The Figure 10 displays the comparison of Saccharomycotina genera present on the surface of D. suzukii and on the surface of endemic Drosophila species. Fungal genera not associated with sour rout were coded as non-Saccharomycotina.
+
+```{r data Figure 10}
+# Load the data with a flag indicating whether it is an endemic fly or a Suzukii
+dfSourRot <- LoadSourRot(flag_suzuki = T)$dfSourRot
+df_correspondance <- data.frame(NameVar = LoadSourRot(flag_suzuki = T)$vars, type = LoadSourRot(flag_suzuki = T)$type)
+# Creates a table of correspondance
+
+dfExp3_Figure10 <- df_correspondance |> 
+  group_by(type) |> 
+  reframe(hits = rowSums(dfSourRot[NameVar], na.rm = TRUE), Species = dfSourRot$species, Genus = dfSourRot$genus, Family= dfSourRot$genus, Order = dfSourRot$order) |> 
+  pivot_wider(names_from = type, values_from = hits) |> 
+  left_join(y = df_col_Exp3, by = "Order") |> 
+  group_by(Genus, Order, type) |> 
+  reframe(across(.cols =where(is.double) , .fns = ~sum(.x, na.rm= T))) |> 
+  mutate(type = if_else(grepl(pattern = "unknown", Order), true = NA, false = type)) |>
+  mutate(type = if_else(Order == "Saccharomycetales", true = "Saccharomycotina", false = type)) |>
+  group_by(Genus) |> 
+  reframe(across(.cols =where(is.double) , .fns = ~sum(.x, na.rm= T)), Order = Order, type = type) |> 
+  pivot_longer(cols = -c(Genus, Order, type), names_to = "Experiment", values_to = "hits") |> 
+  filter(Experiment %in% c("Endemic", "Suzukii")) |> 
+  group_by(Experiment) |>
+  reframe(Experiment = Experiment, Genus = Genus, Proportion = hits/sum(hits, na.rm = T), hits, Order, type) |> 
+  left_join(y = df_col |> select(Genus, ColName, ColOrder), by = "Genus") |>
+  filter(hits >0)
+```
+
+We set up the colors, essentially using the same as the ones used in the previous Figures.
+
+```{r colors Figure 10}
+# takes the same color for Non-Saccharomycotina as in Figure 2
+col_NonSaccharomycotina <- df_col |> filter(type == "Non-Saccharomycotina") |>  select(type, Coltype) |> pull(Coltype) |> unique()
+dfExp3_Figure10$ColName[dfExp3_Figure10$type == "Non-Saccharomycotina"] <- col_NonSaccharomycotina
+# We use the same colors for the genera of Figure 1-6
+# We thus create a table of correspondance
+new_cols <- dfExp3_Figure10 |> filter(type == "Saccharomycotina" & is.na(ColName)) |> select(Genus, ColName) |> distinct()
+# In this data set, there are 2 genera that are not present in the data sets of Table_S2 and S3.
+# We assign the same colors to the genera that appeared in the Figure 1-6
+# For the two extra genera, we take the last two colors (!) 
+# of the palette used for the Figure 1-6
+new_cols$ColName <- colorspace::sequential_hcl(n =(cat_col["Saccharomycotina"]) + 2,palette = "Greens")[(cat_col["Saccharomycotina"] + 2):(cat_col["Saccharomycotina"] + 1)]
+dfExp3_Figure10 <- left_join(dfExp3_Figure10, y = new_cols, by = c("Genus")) |> 
+  mutate(ColName = coalesce(ColName.x, ColName.y), ColName.x = NULL, ColName.y = NULL) |> 
+  mutate(Genus = case_when(type == "Non-Saccharomycotina" ~"Non-Saccharomycotina",
+                           is.na(type) & grepl(pattern = "unknown", x = Genus)~NA,
+                           .default = Genus)) |> 
+  arrange(is.na(Genus), type, Genus)
+```
+
+We then rearrange the levels of the genera of the Figure 10 and compute the sample sizes.
+
+```{r last steps before plotting Figure 10}
+lev_Genus <- unique(dfExp3_Figure10$Genus)
+lev_Genus <- c(lev_Genus[lev_Genus == "Non-Saccharomycotina" & !is.na(lev_Genus)],
+               sort(lev_Genus[-c(which(is.na(lev_Genus)), which(lev_Genus == "Non-Saccharomycotina"))]), 
+                    lev_Genus[is.na(lev_Genus)]) 
+dfExp3_Figure10$Genus <- factor(dfExp3_Figure10$Genus, levels = lev_Genus)
+dfExp3_Figure10_Size <- dfExp3_Figure10 |> group_by(Experiment) |> summarise(hits = sum(hits)) |> mutate(label = paste("n =", hits))
+# just extract the colors to be used afterwards
+df_col10 <- dfExp3_Figure10 |> select(Genus, ColName) |> distinct()
+```
+
+We can now plot the Figure 10. 
+```{r Figure 10}
+pl10 <- ggplot(data = dfExp3_Figure10,  mapping = aes(x = Experiment, fill = Genus, y = Proportion)) +
+  geom_bar(stat = "identity", width = .3) +
+  scale_y_continuous(labels = scales::percent_format(), breaks = seq(0,1, by = 0.1), minor_breaks = seq(0.05, to = 0.95, by = 0.1)) +
+  labs( y = "Proportion", fill = "Genus") +
+  scale_fill_manual( values =df_col10$ColName, breaks = df_col10$Genus) +
+  geom_text(data = dfExp3_Figure10_Size,  
+            aes(x = Experiment, y = 1.05, label = label),
+            inherit.aes = FALSE,
+            vjust = -0.0, size = 3) +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_line(color = "grey70", linewidth =  0.6),
+    panel.grid.minor = element_line(color = "grey85", linewidth = 0.4),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank()
+  )
+
+pl10
+```
+
+
+```{r save Figure 10, echo= FALSE}
+ggsave("Figures/Figure10.png", plot = pl10, width = wd, height = hei)
+ggsave("Figures/Figure10.eps", plot = pl10, device = cairo_ps, width = wd, height = hei)
+saveWidget(ggplotly(pl10) , file = "Figures/Figure10.html", libdir = "AuxFiles/")
+```
+
+
 
