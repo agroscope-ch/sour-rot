@@ -47,7 +47,7 @@ We first load the data described in the first Table and do some basic processing
 
 ```{r load table S1}
 
-dfExp1 <- read_excel(path = "Data/TABLE S1_COM1_NEW_prMW.xlsx", skip = 1)
+dfExp1 <- read_excel(path = "Data/TABLE S1_COM1.xlsx", skip = 1)
 dfExp1 <- dfExp1 |> 
   # selects interesting columns
   select(`Sequences 16S or ITS named after verification (in LPSN for bacteria and Mycobank/Index Fungorum for fungi) of the name(s) obtained by sequence similarity searches in GenBank.`, A, B, C, D, `Order; family (after GenBank)`) |>
@@ -85,7 +85,7 @@ We then load the second dataset.
 
 ### Study 2, Figure 2-7
 
-dfExp2 <- read_excel(path = "Data/TABLE_S2_COM2_NEW_prMW.xlsx", skip = 1)
+dfExp2 <- read_excel(path = "Data/TABLE_S2_COM2.xlsx", skip = 1)
 ## removing the raw containing totals
 ind_remove <- dfExp2 |> pull(`16S or ITS sequences named based on GenBank BLAST top score(s) after verification of the taxon current names in taxonomic databases (LPSN for bacteria and Mycobank/Index Fungorum for fungi)`) |> grep(pattern = "otal", x =_)
 dfExp2 <- dfExp2[-ind_remove,]
@@ -483,7 +483,7 @@ saveWidget(ggplotly(pl6B) , file = "Figures/Figure6B.html", libdir = "AuxFiles/"
 The third study gathers data from four categories: healthy berries post-surface sterilization (internal), the surface of healthy non-sterilized berries (external),berries affected by sour rot (sour rot) of grapes cv. Gamay and of Drosophila spp. (insects) captured in a commercial vineyard in Begnins (VD, Switzerland).
 
 ```{r Load data Exp 3}
-dfExp3 <- read_excel(path = "Data/TABLE_S3_COM3_NEW_prMW.xlsx", skip = 1)
+dfExp3 <- read_excel(path = "Data/TABLE_S3_COM3.xlsx", skip = 1)
 ## removing the raw containing totals
 ind_remove <- dfExp3 |> pull(`Sequences 16S or ITS named after verification in Mycobank/Index Fungorum of the name(s) obtained by sequence similarity searches in GenBank.`) |> grep(pattern = "otal", x =_)
 dfExp3 <- dfExp3[-ind_remove,]
@@ -924,7 +924,7 @@ df_col10 <- dfExp3_Figure10 |> select(Genus, ColName) |> distinct()
 We can now plot the Figure 10. 
 ```{r Figure 10}
 pl10 <- ggplot(data = dfExp3_Figure10,  mapping = aes(x = Experiment, fill = Genus, y = Proportion)) +
-  geom_bar(stat = "identity", width = .3) +
+  geom_bar(stat = "identity", col = "white",  width = .3) +
   scale_y_continuous(labels = scales::percent_format(), breaks = seq(0,1, by = 0.1), minor_breaks = seq(0.05, to = 0.95, by = 0.1)) +
   labs( y = "Proportion", fill = "Genus") +
   scale_fill_manual( values =df_col10$ColName, breaks = df_col10$Genus) +
