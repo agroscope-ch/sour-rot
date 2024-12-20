@@ -1,7 +1,4 @@
-## In this short code, we create 
-
-
-### We merge the two datasets used in Figure 1-7 to use a single color for each species disregarding the Figure
+### We merge the two datasets used in Figure 1-7 to use a single color for each species/genus disregarding the Figure
 df_col <-  dfExp1 |>
   select(Genus, Order) |>
   mutate(Exp = 1) |> 
@@ -12,15 +9,13 @@ df_col <-  dfExp1 |>
   reframe(Genus = Genus, Order = Order, Overlap = sum(Exp)) |> 
   distinct() 
 
-## Remove a doublon in the naming of Zygascus
-# df_col = df_col[-which(df_col$Genus == "Zygoascus" & df_col$Order == "Phaffomycetales"),]
-
 # We use 3 distinct palette:
 # Greens for Saccharomycotina, that are usually associated with Sour rot
 # Reds for Bacteria
 # the Cividis palette, ranging from blue to yellow for the other fungi
 # We arrange the first by type (bacteria, Other and Saccharomycotina) and within
 # each type, by alphabetical order of the Genera
+
 df_col <- df_col |> mutate(type = case_when(
   Order %in% c("Rhodospirillales" , "Enterobacterales", "Xanthomonadales", "Bacillales")~ "Bacteria",
   Order %in% c("Ascoideales", "Pichiales","Dipodascales", "Saccharomycodales", "Serinales", "Phaffomycetales" )~ "Saccharomycotina",
@@ -28,7 +23,7 @@ df_col <- df_col |> mutate(type = case_when(
 )) |> 
   arrange(type, Genus, desc(is.na(Order))) |> 
   mutate(type = factor(type, levels = unique(type)), Genus = factor(Genus, levels = unique(Genus)), Order = factor(Order, levels = unique(Order)))
-# Attribution of a color to each genera
+# Assignment of a color to each genera
 cat_col <- table(df_col$type)
 df_col$ColName <- NA
 df_col$ColName[df_col$type == "Non-Saccharomycotina"] <- colorspace::divergingx_hcl(n =cat_col["Non-Saccharomycotina"],palette = "Cividis")
@@ -60,9 +55,9 @@ ggplot(data=colorKey, aes(x=1, y = nrow(colorKey):1, fill=colorName, label=color
 
 
 ## showing colors of Order
-df_Order <- df_col |> select(Order, ColOrder) |> distinct()
-myPalette <- df_Order$ColOrder
-names(myPalette) <- df_Order$Order
+df_order <- df_col |> select(Order, ColOrder) |> distinct()
+myPalette <- df_order$ColOrder
+names(myPalette) <- df_order$Order
 colorKey = data.frame(colorName=names(myPalette))
 ggplot(data=colorKey, aes(x=1, y = nrow(colorKey):1, fill=colorName, label=colorName)) +
   geom_tile(width = 0.1) +
@@ -81,8 +76,10 @@ ggplot(data=colorKey, aes(x=1, y = nrow(colorKey):1, fill=colorName, label=color
   theme_void()+
   geom_text()
 
+rm(df_order, df_type, myPalette, colorKey)
+
 ## Creating a table to check the correspondance between original names of
-## the species, genera and Order that are then used in the figures.
+## the species, genera and order that are then used in the figures.
 a <- dfExp1 |> select(Species, Order, Family, Genus) |> distinct()
 b <- dfExp2 |> select(Species, Order, Family, Genus) |> distinct()
 bind_rows(a,b) |> select(-Family)|>  distinct() |> select(Species, Genus, Order) |> write.table(file = "check_names.csv", quote = FALSE, row.names = FALSE, col.names = TRUE, sep = ";")
