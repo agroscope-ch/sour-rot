@@ -21,12 +21,12 @@ hei = 5
 
 In the aforementioned paper, the data of three different settings are considered. The corresponding data are are gathered in four different files, corresponding to different Figures in the paper:
 
-- `TABLE S1_COM1.xlsx`: Figure 1
+- `TABLE_S1_COM1.xlsx`: Figure 1
 - `TABLE_S2_COM2.xlsx`: Figure 2-6
 - `TABLE_S3_COM3.xlsx`: Figure 7 
-- `data_sour_rot.xlsx`: Figure 8, 9 and 10
+- `detailed_TABLE_S3.csv`: Figure 8, 9 and 10
 
-The file `data_sour_rot.xlsx` gathers data from the same study as the `TABLE_S3_COM3.xlsx` but with a different resolution. In the file `TABLE_S3_COM3.xlsx`, the number of hits of each detected species is aggregated (i.e. summed) over 4 modalities (`A` to `D`), irrespective of the sample itself (i.e. the berry or the insect). In `data_sour_rot.xlsx`, the number of hits is given for each species and _each sample_ (and not aggregated over modalities), but only the samples of the modalities `B`, `C` and `D` are considered.
+The file `detailed_TABLE_S3.csv` gathers data from the same study as the `TABLE_S3_COM3.xlsx` but with a different resolution. In the file `TABLE_S3_COM3.xlsx`, the number of hits of each detected species is aggregated (i.e. summed) over 4 modalities (`A` to `D`), irrespective of the sample itself (i.e. the berry or the insect). In `data_sour_rot.xlsx`, the number of hits is given for each species and _each sample_ (and not aggregated over modalities), but only the samples of the modalities `B`, `C` and `D` are considered.
 
 The code to reproduce the Figures of the paper is provided here. In addition to the code, an interactive version of the plots is provided, so that details of the plots can be better explored. 
 
@@ -47,7 +47,7 @@ We first load the data described in the first Table and do some basic processing
 
 ```{r load table S1}
 
-dfExp1 <- read_excel(path = "Data/TABLE S1_COM1.xlsx", skip = 1)
+dfExp1 <- read_excel(path = "Data/TABLE_S1_COM1.xlsx", skip = 1)
 dfExp1 <- dfExp1 |> 
   # selects interesting columns
   select(`Sequences 16S or ITS named after verification (in LPSN for bacteria and Mycobank/Index Fungorum for fungi) of the name(s) obtained by sequence similarity searches in GenBank.`, A, B, C, D, `Order; family (after GenBank)`) |>
