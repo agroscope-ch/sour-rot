@@ -3,18 +3,27 @@ library(tidyverse)
 library(readxl)
 library(stringr)
 
-LoadSourRot <- function(normalization = FALSE, flag_suzuki = FALSE )
+LoadSourRot <- function(path = "Data/detailed_TABLE_S3.csv", normalization = FALSE, flag_suzuki = FALSE, sheet = 1, skip = 1)
 {
-  
   # normalization: if TRUE, returns the proportion of species in each sample and not the absolute number of occurrences
-  dfSourRot <- read_excel(path = "Data/data_sour_rot.xlsx", col_names = T, skip = 1)
-  apply(dfSourRot, 2, function(z)all(is.na(z))) |> which()
-  ## rename some columns in English
-  dfSourRot <- dfSourRot |>
-    dplyr::rename(species = "genotype", order = "ordre")
-  # We remove this problematic sample
-  dfSourRot <- dfSourRot |> 
-    select(-G4B1) 
+  ext = sub(".*\\.", "", path)
+  if(ext == "csv")
+  {
+    dfSourRot <- read_csv(file = path, col_names = T)
+  } else
+  {
+    dfSourRot <- read_excel(path = path, col_names = T, skip = skip, sheet = sheet)
+  }
+  ## rename some columns in English if necessary
+  if(any(c("genotype", "ordre") %in% names(dfSourRot)))
+  {
+    
+    dfSourRot <- dfSourRot |>
+      dplyr::rename(species = "genotype", order = "ordre")
+  }
+  # We remove this problematic sample if it exists
+  if(any(grepl(pattern = "G4B1", x = names(dfSourRot))))  dfSourRot <- dfSourRot |> select(-G4B1)
+  
   dfSourRot$family[is.na(dfSourRot$family)] <- "Incertae sedis"
   dfSourRot <- dfSourRot |> relocate(order, family, genus, species)
 
@@ -26,10 +35,6 @@ LoadSourRot <- function(normalization = FALSE, flag_suzuki = FALSE )
   dfSourRot <- dfSourRot |> 
     filter(! if_all(-c(order, family, genus, species), ~. == 0))
   
-  
-  
-  ids <- apply(dfSourRot[,1:4], 1, function(z)length(unique(z)) ) == 4
-  dfSourRot <- dfSourRot[ids,]
   
   ## merge identical rows (identical means with same order, family, genus, species),
   ## by summing corresponding values of abundance
