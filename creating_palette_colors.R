@@ -82,5 +82,13 @@ rm(df_order, df_type, myPalette, colorKey)
 ## the species, genera and order that are then used in the figures.
 a <- dfExp1 |> select(Species, Order, Family, Genus) |> distinct()
 b <- dfExp2 |> select(Species, Order, Family, Genus) |> distinct()
-bind_rows(a,b) |> select(-Family)|>  distinct() |> select(Species, Genus, Order) |> write.table(file = "check_names.csv", quote = FALSE, row.names = FALSE, col.names = TRUE, sep = ";")
+write_flag = FALSE
+if(write_flag)
+{
+  bind_rows(a,b) |> 
+    select(-Family)|>  
+    distinct() |> 
+    select(Species, Genus, Order) |>
+    write.table(file = "check_names.csv", quote = FALSE, row.names = FALSE, col.names = TRUE, sep = ";")
+}
 rm(a,b)
