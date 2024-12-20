@@ -1,50 +1,44 @@
 # Sour Rot
 
-Fungal communities were studied in 3 different environments:
+This is the repository associated to the paper [Revisiting sour rot of grapevine through disease-associated microbiomes: a tripartite co-infection?](https://www.biorxiv.org/content/10.1101/2024.09.19.613941v1). For the sake of **open-data**, we provide all the data used in the paper in the folder [Data](https://github.com/agroscope-ch/sour-rot/tree/master/Data). 
+In addition to providing the data and for the sake of **reproducibility**, we provide the codes that have produced the analyses and the figures of this paper. The codes are provided in the _Rmarkdown_ file [Reproducing_figures_sour_rot.Rmd](https://github.com/agroscope-ch/sour-rot/blob/master/Reproducing_figures_sour_rot.Rmd), that both produce the results and gives details about how they are obtained, so as to make all the preprocessing steps fully transparent. The corresponding (i.e. readable) file [Reproducing_figures_sour_rot.html](https://github.com/agroscope-ch/sour-rot/blob/master/Reproducing_figures_sour_rot.html) can be either downloaded or visualized using this [link](https://html-preview.github.io/?url=https://github.com/agroscope-ch/sour-rot/blob/master/Reproducing_figures_sour_rot.html).
 
-- Drosophila, vectors of the disease;
-- The skin of healthy grape berries;
-- berries affected by the disease (i.e., with indistinguishable exteriors and interiors).
+Those analyses are done using standard R pacakges, essentially the [tidyverse](https://www.tidyverse.org/) [[1]](#1)  collection of packages and [metacoder](https://grunwaldlab.github.io/metacoder_documentation/index.html)[[2]](#2)
 
-The aim is to see if there are any differences in terms of fungal community. 
+## Note on downloading the files
 
-For each observation (i.e. a healthy or infected berry or a _Drosophila_) $`\mathbf{x}_i,\quad i = 1,\dots,n`$, we observe a certain number of different fungi. In concrete terms, let $`p`$ be the number of different fungi observed in all samples, and let $`x_{ik}`$ be the number of occurrences of fungus $`k, \quad k = 1,\dots,p`$ in sample $`i`$. The design matrix $`\mathbf{X}`$ with generic entries $`x_{ik}`$ is the data set provided in the file [data_sour_rot](Data/data_sour_rot.xlsx)
-
-## Data description
-
-The dataset contains 124 samples, distributed as follows :
-
-- each insect harvest (1 to 6 ) for the 3 insect types (male, female, other)
-- each berry harvested (1 to 8 ) for each cluster
-    - The outside of 5 healthy bunches (G11Cx, G12Cx, G13Cx, G14Cx, G15Cx), x being the berry (8 berries in total)
-    - 8 bunches infected with acid rot (G4Bx, G5Bx, G8Bx, G9Bx, G10Bx, G16Bx, G17Bx, G18Bx).
-
-For each detected fungus, the species, the genus, the family and the order are given. Some are classified as _Incertae sedis_. 
-
-## Description of the codes in this repository
-
-The codes consist in two distinct files:
-
-- [`Load_preprocess_sour_rot.R`](Load_preprocess_sour_rot.R). It is a simple code that preprocesses the data.
-- [`Reproducing_figures_sour_rot.Rmd`](Reproducing_figures_sour_rot.Rmd). It is a Rmarkdown document that reproduces the figures that are included in the paper  (and some others that not been included). Running this notebook, one can reproduce all the plots that provided in the paper. Some additional details are also given. 
-
-## Note on data storage
-
-To ensure long term support and readability of the dataset, we have saved a copy of the original `.xlsx` file in a `.csv` file. To do so, we have run the following R line of code (using the package [`readxl`](https://readxl.tidyverse.org/))
+As it is customary for github repository, the easiest way to get the repository is by using the following `git` command
 
 ```
-dfSourRot <- read_excel(path = "Data/data_sour_rot.xlsx", col_names = T, skip = 1)
-write_csv(dfSourRot, file = "Data/data_sour_rot.csv")
+git clone https://github.com/agroscope-ch/sour-rot.git 
 ```
+For more information about what that this precisely mean, [see](https://github.com/git-guides/git-clone).
 
-In the function `LoadSourRot` in the file [`Load_preprocess_sour_rot.R`](Load_preprocess_sour_rot.R), one can substitute the line 
-```
-dfSourRot <- read_excel(path = "Data/data_sour_rot.xlsx", col_names = T, skip = 1)
-```
-with the line
+It is also possible to download all the files separately by clicking on it and then use the top right icon `download raw file`, as shown here
 
-```
-dfSourRot <- read.csv(file = "Data/data_sour_rot.csv")
-```
+![](./Figures/Download_file_github.png)
 
-to get the exact same result, but relying on the `.csv` file. 
+In poarticular all the files with format that are not natively redered or supported by github (for instance in this repository, `.html` and `.xlsx` files) cannot be visualized without first downloading it. 
+
+## Data
+
+The data are described in full details in the paper and are available in the folder [`Data`](https://github.com/agroscope-ch/sour-rot/tree/master/Data). There are 3 different studies, each of which with a `xlsx` file. Some of the results (Figure 8-10) require data at the sample level of the third study, which are provided in the file [` `]
+
+## Figures
+
+Most of the figures are provided in different formats: 
+
+- `.png` provided for simplicity. 
+- `.html` interactive plots, usefull for better exploring the data
+- `.eps` required for publication
+
+
+## References
+
+<a id="1">[1]</a> 
+Wickham, H. _et al._ (2019). 
+Journal of Open Source Software, 43(4), 1686. [DOI: 10.21105/joss.01686](https://doi.org/10.21105/joss.01686)
+
+<a id="2">[2]</a> 
+Z. Foster, T. Sharpton and N. Grünwald (2017). 
+PLOS Computational Biology, 13(2), 1-15. [DOI: 10.1371/journal.pcbi.1005404](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005404)
