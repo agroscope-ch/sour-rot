@@ -7,7 +7,7 @@ Those analyses are done using standard R pacakges, essentially the [tidyverse](h
 
 ## Note on downloading the files
 
-As it is customary for github repository, the easiest way to get the repository is by using the following `git` command
+As it is customary for github repository, the easiest way to get the repository is by using the following `git clone` command
 
 ```
 git clone https://github.com/agroscope-ch/sour-rot.git 
@@ -18,11 +18,11 @@ It is also possible to download all the files separately by clicking on it and t
 
 ![](./Figures/Download_file_github.png)
 
-In poarticular all the files with format that are not natively redered or supported by github (for instance in this repository, `.html` and `.xlsx` files) cannot be visualized without first downloading it. 
+In particular all the files with format that are not natively redered or supported by github (for instance in this repository, `.html` and `.xlsx` files) cannot be visualized without first downloading it. 
 
 ## Data
 
-The data are described in full details in the paper and are available in the folder [`Data`](https://github.com/agroscope-ch/sour-rot/tree/master/Data). There are 3 different studies, each of which with a `xlsx` file. Some of the results (Figure 8-10) require data at the sample level of the third study, which are provided in the file [` `]
+The data are described in full details in the paper and are available in the folder [`Data`](https://github.com/agroscope-ch/sour-rot/tree/master/Data). There are 3 different studies, each of which with a `xlsx` file. Some of the results (Figure 8-10) require data at the sample level of the third study, which are provided in the file [`detailed_TABLE_S3.csv`]. 
 
 ## Figures
 
