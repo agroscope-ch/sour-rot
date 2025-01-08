@@ -420,7 +420,7 @@ pl6A <- ggplot(data = dfExp2_Figure6A,  mapping = aes(x = Protection, fill = Ord
     panel.grid.major.x = element_blank(),
     panel.grid.minor.x = element_blank()
   )+
-  ggtitle(label = "Wounded berries", subtitle = "Distribution of the order among samples")
+  ggtitle(label = "Wounded berries", subtitle = "A: Distribution of the order among samples")
 
 pl6A
 ```
@@ -466,7 +466,7 @@ pl6B <- ggplot(data = dfExp2_Figure6B,  mapping = aes(x = Protection, fill = Gen
     panel.grid.major.x = element_blank(),
     panel.grid.minor.x = element_blank()
   ) +
-  ggtitle(label = "Wounded berries", subtitle = "Distribution of the genera among samples")
+  ggtitle(label = "Wounded berries", subtitle = "B: Distribution of the genera among samples")
 
 pl6B
 ```
