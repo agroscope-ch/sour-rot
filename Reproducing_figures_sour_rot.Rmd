@@ -782,9 +782,9 @@ The next three plots are the exact same, but without a common color scale. This 
 
 ```
 
-We also provide the plots without title and in `.eps` format (provided for the paper submission). 
+We also provide the plots without title (to be combined manually for the paper version). 
 
-```{r figure 8 in eps format}
+```{r figure 8 in pdf format}
 set.seed(1) # This makes the plot appear the same each time it is run 
   heat_tree(obj, 
             node_label = taxon_names,
@@ -796,7 +796,7 @@ set.seed(1) # This makes the plot appear the same each time it is run
             layout = "davidson-harel", # The primary layout algorithm
             initial_layout = "reingold-tilford",
             edge_color_interval =  range_col, 
-            output_file = "Figures/Figure8_A_sour_rot.eps")
+            output_file = "Figures/Figure8_A_sour_rot.pdf")
  set.seed(1) # This makes the plot appear the same each time it is run 
   heat_tree(obj, 
             node_label = taxon_names,
@@ -808,7 +808,7 @@ set.seed(1) # This makes the plot appear the same each time it is run
             layout = "davidson-harel", # The primary layout algorithm
             initial_layout = "reingold-tilford",
             edge_color_interval =  range_col, 
-            output_file = "Figures/Figure8_B_healthy_berries.eps")
+            output_file = "Figures/Figure8_B_healthy_berries.pdf")
 set.seed(1) # This makes the plot appear the same each time it is run 
   heat_tree(obj, 
             node_label = taxon_names,
@@ -820,7 +820,7 @@ set.seed(1) # This makes the plot appear the same each time it is run
             layout = "davidson-harel", # The primary layout algorithm
             initial_layout = "reingold-tilford",
             edge_color_interval =  range_col,
-            output_file = "Figures/Figure8_C_Drosophilia.eps")
+            output_file = "Figures/Figure8_C_Drosophilia.pdf")
 ```
 
 #### Relative abundance
