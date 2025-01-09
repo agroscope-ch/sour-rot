@@ -782,6 +782,46 @@ The next three plots are the exact same, but without a common color scale. This 
 
 ```
 
+We also provide the plots without title and in `.eps` format (provided for the paper submission). 
+
+```{r figure 8 in eps format}
+set.seed(1) # This makes the plot appear the same each time it is run 
+  heat_tree(obj, 
+            node_label = taxon_names,
+            node_size = n_obs,
+            node_color = obj$data$tax_occ$`sour rot`,
+            title_size = 0.04,
+            node_size_axis_label = "ITS genotypes",
+            node_color_axis_label = "Samples with reads",
+            layout = "davidson-harel", # The primary layout algorithm
+            initial_layout = "reingold-tilford",
+            edge_color_interval =  range_col, 
+            output_file = "Figures/Figure8_A_sour_rot.eps")
+ set.seed(1) # This makes the plot appear the same each time it is run 
+  heat_tree(obj, 
+            node_label = taxon_names,
+            node_size = n_obs,
+            node_color = extern, 
+            title_size = 0.04,
+            node_size_axis_label = "ITS genotypes",
+            node_color_axis_label = "Samples with reads",
+            layout = "davidson-harel", # The primary layout algorithm
+            initial_layout = "reingold-tilford",
+            edge_color_interval =  range_col, 
+            output_file = "Figures/Figure8_B_healthy_berries.eps")
+set.seed(1) # This makes the plot appear the same each time it is run 
+  heat_tree(obj, 
+            node_label = taxon_names,
+            node_size = n_obs,
+            node_color = insect, 
+            title_size = 0.04,
+            node_size_axis_label = "ITS genotypes",
+            node_color_axis_label = "Samples with reads",
+            layout = "davidson-harel", # The primary layout algorithm
+            initial_layout = "reingold-tilford",
+            edge_color_interval =  range_col,
+            output_file = "Figures/Figure8_C_Drosophilia.eps")
+```
 
 #### Relative abundance
 
