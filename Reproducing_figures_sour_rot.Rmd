@@ -493,7 +493,7 @@ dfExp3 <- dfExp3[-ind_remove,]
 # get names of the columns corresponding to the hits
 def_var <- grep("^[A-Z]\\s", names(dfExp3), value = TRUE)
 dfExp3 <- dfExp3 |> select(`Sequences 16S or ITS named after verification in Mycobank/Index Fungorum of the name(s) obtained by sequence similarity searches in GenBank.`,
-                           all_of(def_var),`Order; family (after Mycobank)`) |>
+                           all_of(def_var),`Subphylum; order; family (after Mycobank)`) |>
   # rename the columns corresponding to the experiment with only the initial capital letter
   rename_with(.fn = ~ str_sub(.x, start = 1L, end = 1L),.cols =  matches("^[A-Z]\\s")) |> 
   pivot_longer(cols = LETTERS[1:length(def_var)], names_to = "Experiment", values_to = "hits")
@@ -522,11 +522,11 @@ df_categories <- df_categories |> select(Experiment, type)
 
 dfExp3 <-
   dfExp3 |> 
-  # rename unconvinent columns
-  rename(Species =`Sequences 16S or ITS named after verification in Mycobank/Index Fungorum of the name(s) obtained by sequence similarity searches in GenBank.`,
-         OrderFamily = `Order; family (after Mycobank)`) |>
-  # gets the order and the family
-  separate_wider_delim(OrderFamily, delim = ";", names = c("Order", "Family")) |>
+    # rename unconvinent columns
+    rename(Species =`Sequences 16S or ITS named after verification in Mycobank/Index Fungorum of the name(s) obtained by sequence similarity searches in GenBank.`,
+           SubphylumOrderFamily = `Subphylum; order; family (after Mycobank)`) |>
+    # gets the order and the family
+    separate_wider_delim(SubphylumOrderFamily, delim = ";", names = c("Subphylum", "Order", "Family"), too_few = "align_start") |>
   # transform NA into 0 (what they are!)
   mutate(hits = if_else(is.na(hits), false = hits, true = 0)) |> 
   # removes the unnecessary column
@@ -540,7 +540,7 @@ dfExp3 <-
   mutate( across(.cols = c(Genus, Family, Order), .fns = ~ gsub(" ", "", x =.))) |>
   # replace the cells containing "?" (regex: "\\?") by a NA
   mutate(across(.cols = c(Genus, Family, Species, Order), .fns = ~ if_else(grepl(pattern = "\\?",x=. ), true = NA, false = .) )) |>
-  relocate(Order, Family, Genus, Species)
+  relocate(Subphylum, Order, Family, Genus, Species)
 
 ```
 
@@ -650,11 +650,12 @@ as.data.frame(samp_sizes) |> rename(Modality = Var1, "Sample size" = Freq) |> kn
 Then, we create an object that can be parsed by the utilities of `metacoder`. It essentially follows the steps described in the [documentation](https://grunwaldlab.github.io/metacoder_documentation/index.html) of the package.
 ```{r parse metacoder, message=FALSE}
 # creates a column that contains taxonomic information
-dfSourRot$lineage <- apply(data.frame(root = "r__Root",apply(dfSourRot[,1:4], 1, function(z)paste(c("s__","g__", "f__", "o__" ),z, sep="") ) |> t())
-                             ,1, paste0, collapse= ";")
+dfSourRot$lineage <- apply(data.frame(root = "r__Root",apply(dfSourRot[,c("Subphylum", "order", "family", "genus", "species" )], 1, function(z)paste(c("p__","o__", "f__", "g__", "s__" ),z, sep="") ) |> t())
+                           ,1, paste0, collapse= ";")
 
 
-obj <- parse_tax_data(dfSourRot[, -c(1:4)], # we do not consider the columns corresponding to species, genus, family and order 
+
+obj <- parse_tax_data(dfSourRot[, -c(1:5)], # we do not consider the columns corresponding to species, genus, family and order 
                       class_cols = "lineage", # the column that contains taxonomic information
                       class_sep = ";", # The character used to separate taxa in the classification
                       class_regex = "^(.+)__(.+)$", # Regex identifying where the data for each taxon is

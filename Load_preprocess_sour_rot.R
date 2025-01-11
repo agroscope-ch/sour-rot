@@ -25,31 +25,31 @@ LoadSourRot <- function(path = "Data/detailed_TABLE_S3.csv", normalization = FAL
   if(any(grepl(pattern = "G4B1", x = names(dfSourRot))))  dfSourRot <- dfSourRot |> select(-G4B1)
   
   dfSourRot$family[is.na(dfSourRot$family)] <- "Incertae sedis"
-  dfSourRot <- dfSourRot |> relocate(order, family, genus, species)
-
+  dfSourRot <- dfSourRot |> relocate(order, family, genus, species, Subphylum)
+  # browser()
   dfSourRot <- dfSourRot |> 
-    mutate(dplyr::across(.cols = -c(order, family, genus, species), .fns = ~replace_na(.,0))) 
+    mutate(dplyr::across(.cols = -c(order, family, genus, species, Subphylum), .fns = ~replace_na(.,0))) 
   
   
   # removes the all 0 rows
   dfSourRot <- dfSourRot |> 
-    filter(! if_all(-c(order, family, genus, species), ~. == 0))
+    filter(! if_all(-c(order, family, genus, species, Subphylum), ~. == 0))
   
   
   ## merge identical rows (identical means with same order, family, genus, species),
   ## by summing corresponding values of abundance
   dfSourRot <- dfSourRot |> 
-    group_by(order, family, genus, species) |> 
+    group_by(order, family, genus, species, Subphylum) |> 
     dplyr::summarise(across(everything(),  ~ sum(.x, na.rm = TRUE))) |> 
     ungroup()
   if(normalization)
   {
     dfSourRot <- dfSourRot |> 
-      mutate(across(.cols = c(-order, -family, -genus, -species ),  ~ ./sum(.))) # use only proportion of species in samples
+      mutate(across(.cols = c(-order, -family, -genus, -species, -Subphylum ),  ~ ./sum(.))) # use only proportion of species in samples
   }
   ## removing unwanted spaces at the beggining of a string
-  dfSourRot[,1:4] <- apply(dfSourRot[,1:4], 2, function(z) stringr::str_replace(string = z, pattern = "^\\s+", replacement = ""))
-  dfSourRot[,1:4] <- apply(dfSourRot[,1:4], 2, function(z) stringr::str_replace(string = z, pattern = "\\s+", replacement = " "))
+  dfSourRot[,1:5] <- apply(dfSourRot[,1:5], 2, function(z) stringr::str_replace(string = z, pattern = "^\\s+", replacement = ""))
+  dfSourRot[,1:5] <- apply(dfSourRot[,1:5], 2, function(z) stringr::str_replace(string = z, pattern = "\\s+", replacement = " "))
   
   ## vars is the names of the samples. There are indicated as the columns of type "double"
   vars <- colnames(dfSourRot)[sapply(dfSourRot, typeof) =="double"]
