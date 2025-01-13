@@ -867,6 +867,7 @@ heat_tree_matrix(obj,
                  layout = "davidson-harel", # The primary layout algorithm
                  initial_layout = "reingold-tilford", # The layout algorithm that initializes node locations
                  output_file = paste0("Figures/relative_log2_differential_heat_tree", ext))
+
 heat_tree_matrix(obj,
                  data = "diff_table",
                  node_size = n_obs, # n_obs is a function that calculates, in this case, the number of OTUs per taxon
@@ -901,6 +902,9 @@ obj$data$diff_table |>
     knitr::kable()
 
 ```
+
+
+Note that the published version of the Figure 9 is similar to `relative_log2_differential_heat_tree.pdf` but with some modifications made with [Inkskape](https://inkscape.org/) to enhance readability and to provide the expected format for publication (`.eps`). But only the sizes of the trees and of the legends have been modified. 
 
 The Figure 10 displays the comparison of Saccharomycotina genera present on the surface of D. suzukii and on the surface of endemic Drosophila species. Fungal genera not associated with sour rout were coded as non-Saccharomycotina.
 
