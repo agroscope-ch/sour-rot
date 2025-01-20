@@ -519,14 +519,15 @@ df_categories <- df_categories |> mutate(type = case_when(
   type == "heal" & Sterilization == "US" ~ "extern"
 ))
 df_categories <- df_categories |> select(Experiment, type)
+all_ranks <- c("Subphylum", "Order", "Family", "Genus", "Species")
 
 dfExp3 <-
   dfExp3 |> 
-    # rename unconvinent columns
-    rename(Species =`Sequences 16S or ITS named after verification in Mycobank/Index Fungorum of the name(s) obtained by sequence similarity searches in GenBank.`,
-           SubphylumOrderFamily = `Subphylum; order; family (after Mycobank)`) |>
-    # gets the order and the family
-    separate_wider_delim(SubphylumOrderFamily, delim = ";", names = c("Subphylum", "Order", "Family"), too_few = "align_start") |>
+  # rename unconvinent columns
+  rename(Species =`Sequences 16S or ITS named after verification in Mycobank/Index Fungorum of the name(s) obtained by sequence similarity searches in GenBank.`,
+         SubphylumOrderFamily = `Subphylum; order; family (after Mycobank)`) |>
+  # gets the order and the family
+  separate_wider_delim(SubphylumOrderFamily, delim = ";", names = c("Subphylum", "Order", "Family"), too_few = "align_start") |>
   # transform NA into 0 (what they are!)
   mutate(hits = if_else(is.na(hits), false = hits, true = 0)) |> 
   # removes the unnecessary column
@@ -536,11 +537,11 @@ dfExp3 <-
   # rextract the genus (as "what is before the first space")
   mutate(Genus = gsub(" .*$", "", x = Species)) |> 
   # detect all non trivial spaces et replace them 
-  mutate(across(.cols = c(Genus, Family, Species, Order), .fns = ~ gsub("\\p{Zs}", " ", x =., perl = TRUE))) |>
-  mutate( across(.cols = c(Genus, Family, Order), .fns = ~ gsub(" ", "", x =.))) |>
+  mutate(across(.cols = all_of(all_ranks), .fns = ~ gsub("\\p{Zs}", " ", x =., perl = TRUE))) |>
+  mutate( across(.cols = all_of(all_ranks[!all_ranks == "Species"]), .fns = ~ gsub(" ", "", x =.))) |>
   # replace the cells containing "?" (regex: "\\?") by a NA
-  mutate(across(.cols = c(Genus, Family, Species, Order), .fns = ~ if_else(grepl(pattern = "\\?",x=. ), true = NA, false = .) )) |>
-  relocate(Subphylum, Order, Family, Genus, Species)
+  mutate(across(.cols = all_of(all_ranks), .fns = ~ if_else(grepl(pattern = "\\?",x=. ), true = NA, false = .) )) |>
+  relocate(all_ranks)
 
 ```
 
@@ -791,7 +792,7 @@ set.seed(1) # This makes the plot appear the same each time it is run
             node_label = taxon_names,
             node_size = n_obs,
             node_color = obj$data$tax_occ$`sour rot`,
-            title_size = 0.04,
+            # title_size = 0.04,
             node_size_axis_label = "ITS genotypes",
             node_color_axis_label = "Samples with reads",
             layout = "davidson-harel", # The primary layout algorithm
