@@ -541,7 +541,7 @@ dfExp3 <-
   mutate( across(.cols = all_of(all_ranks[!all_ranks == "Species"]), .fns = ~ gsub(" ", "", x =.))) |>
   # replace the cells containing "?" (regex: "\\?") by a NA
   mutate(across(.cols = all_of(all_ranks), .fns = ~ if_else(grepl(pattern = "\\?",x=. ), true = NA, false = .) )) |>
-  relocate(all_ranks)
+  relocate(all_of(all_ranks))
 
 ```
 
@@ -974,7 +974,7 @@ We can now plot the Figure 10.
 pl10 <- ggplot(data = dfExp3_Figure10,  mapping = aes(x = Experiment, fill = Genus, y = Proportion)) +
   geom_bar(stat = "identity", col = "white",  width = .3) +
   scale_y_continuous(labels = scales::percent_format(), breaks = seq(0,1, by = 0.1), minor_breaks = seq(0.05, to = 0.95, by = 0.1)) +
-  labs( y = "Proportion", fill = "Genus") +
+  labs( y = "Proportion", fill = "Taxa") +
   scale_fill_manual( values =df_col10$ColName, breaks = df_col10$Genus) +
   geom_text(data = dfExp3_Figure10_Size,  
             aes(x = Experiment, y = 1.05, label = label),
