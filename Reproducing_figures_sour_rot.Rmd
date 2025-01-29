@@ -967,11 +967,15 @@ dfExp3_Figure10$Genus <- factor(dfExp3_Figure10$Genus, levels = lev_Genus)
 dfExp3_Figure10_Size <- dfExp3_Figure10 |> group_by(Experiment) |> summarise(hits = sum(hits)) |> mutate(label = paste("n =", hits))
 # just extract the colors to be used afterwards
 df_col10 <- dfExp3_Figure10 |> select(Genus, ColName) |> distinct()
+df_col10$ColName[df_col10$Genus == "Dipodascaceae"] <- "#004616"
+levels(dfExp3_Figure10$Genus) <- c("Non-Saccharomycotina", 
+"Dipodascaceae", "Geotrichum", "Hanseniaspora", "Pichia", 
+"Saccharomycopsis", "Starmerella", "Fungus")
 ```
 
 We can now plot the Figure 10. 
 ```{r Figure 10}
-pl10 <- ggplot(data = dfExp3_Figure10,  mapping = aes(x = Experiment, fill = Genus, y = Proportion)) +
+pl10 <- ggplot(data = dfExp3_Figure10 |> group_by(Experiment, Genus) |> summarise(Proportion = sum(Proportion)),  mapping = aes(x = Experiment, fill = Genus, y = Proportion)) +
   geom_bar(stat = "identity", col = "white",  width = .3) +
   scale_y_continuous(labels = scales::percent_format(), breaks = seq(0,1, by = 0.1), minor_breaks = seq(0.05, to = 0.95, by = 0.1)) +
   labs( y = "Proportion", fill = "Taxa") +
@@ -987,7 +991,6 @@ pl10 <- ggplot(data = dfExp3_Figure10,  mapping = aes(x = Experiment, fill = Gen
     panel.grid.major.x = element_blank(),
     panel.grid.minor.x = element_blank()
   )
-
 pl10
 ```
 
