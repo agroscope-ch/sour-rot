@@ -961,19 +961,17 @@ We then rearrange the levels of the genera of the Figure 10 and compute the samp
 ```{r last steps before plotting Figure 10}
 lev_Genus <- unique(dfExp3_Figure10$Genus)
 lev_Genus <- c(lev_Genus[lev_Genus == "Non-Saccharomycotina" & !is.na(lev_Genus)],
-               sort(lev_Genus[-c(which(is.na(lev_Genus)), which(lev_Genus == "Non-Saccharomycotina"))]), 
-                    lev_Genus[is.na(lev_Genus)]) 
+               sort(lev_Genus[! lev_Genus %in% c("Fungus","Non-Saccharomycotina")]), 
+               lev_Genus[lev_Genus== "Fungus"]) 
 dfExp3_Figure10$Genus <- factor(dfExp3_Figure10$Genus, levels = lev_Genus)
 dfExp3_Figure10_Size <- dfExp3_Figure10 |> group_by(Experiment) |> summarise(hits = sum(hits)) |> mutate(label = paste("n =", hits))
 # just extract the colors to be used afterwards
 df_col10 <- dfExp3_Figure10 |> select(Genus, ColName) |> distinct()
 df_col10$ColName[df_col10$Genus == "Dipodascaceae"] <- "#004616"
-levels(dfExp3_Figure10$Genus) <- c("Non-Saccharomycotina", 
-"Dipodascaceae", "Geotrichum", "Hanseniaspora", "Pichia", 
-"Saccharomycopsis", "Starmerella", "Fungus")
 ```
 
-We can now plot the Figure 10. 
+We can now plot the Figure 10.
+
 ```{r Figure 10}
 pl10 <- ggplot(data = dfExp3_Figure10 |> group_by(Experiment, Genus) |> summarise(Proportion = sum(Proportion)),  mapping = aes(x = Experiment, fill = Genus, y = Proportion)) +
   geom_bar(stat = "identity", col = "white",  width = .3) +
@@ -993,6 +991,7 @@ pl10 <- ggplot(data = dfExp3_Figure10 |> group_by(Experiment, Genus) |> summaris
   )
 pl10
 ```
+
 
 
 ```{r save Figure 10, echo= FALSE}
