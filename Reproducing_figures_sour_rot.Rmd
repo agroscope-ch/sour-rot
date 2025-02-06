@@ -919,7 +919,22 @@ dfExp3_Figure10 <- df_correspondance |>
   group_by(type) |> 
   reframe(hits = rowSums(dfSourRot[NameVar], na.rm = TRUE), Species = dfSourRot$species, Genus = dfSourRot$genus, Family= dfSourRot$genus, Order = dfSourRot$order) |> 
   pivot_wider(names_from = type, values_from = hits) |> 
-  left_join(y = df_col_Exp3, by = "Order") |> 
+  left_join(y = df_col_Exp3, by = "Order")
+
+```
+
+We see in particular that the few hits of _Pichia Californica_ found on _Drosophilia_ are only on the endemic ones:
+
+```{r Data Pichia Californica}
+dfExp3_Figure10 |> select(Species, Endemic, Suzukii, extern, `sour rot`) |> filter(grepl(pattern = "alifornica",x =  Species))|> knitr::kable()
+
+```
+
+We then proceed with the formatting of data.
+
+```{r finish data formatting Figure 10}
+
+dfExp3_Figure10 <- dfExp3_Figure10 |> 
   group_by(Genus, Order, type) |> 
   reframe(across(.cols =where(is.double) , .fns = ~sum(.x, na.rm= T))) |> 
   mutate(type = if_else(grepl(pattern = "unknown", Order), true = NA, false = type)) |>
@@ -932,10 +947,6 @@ dfExp3_Figure10 <- df_correspondance |>
   reframe(Experiment = Experiment, Genus = Genus, Proportion = hits/sum(hits, na.rm = T), hits, Order, type) |> 
   left_join(y = df_col |> select(Genus, ColName, ColOrder), by = "Genus") |>
   filter(hits >0)
-```
-
-```{r show data Figure 10}
-dfExp3_Figure10 |> select(Experiment, Genus,Order, Proportion, hits) |>     knitr::kable()
 ```
 
 We set up the colors, essentially using the same as the ones used in the previous Figures.
