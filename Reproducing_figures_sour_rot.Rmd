@@ -950,7 +950,7 @@ new_cols <- dfExp3_Figure10 |> filter(type == "Saccharomycotina" & is.na(ColName
 new_cols$ColName <- colorspace::sequential_hcl(n =(cat_col["Saccharomycotina"]) + 2,palette = "Greens")[(cat_col["Saccharomycotina"] + 2):(cat_col["Saccharomycotina"] + 1)]
 dfExp3_Figure10 <- left_join(dfExp3_Figure10, y = new_cols, by = c("Genus")) |> 
   mutate(ColName = coalesce(ColName.x, ColName.y), ColName.x = NULL, ColName.y = NULL) |> 
-  mutate(Genus = case_when(type == "Non-Saccharomycotina" ~"Non-Saccharomycotina",
+  mutate(Genus = case_when(type == "Non-Saccharomycotina"  | Genus == "Fungus" ~"Non-Saccharomycotina",
                            is.na(type) & grepl(pattern = "unknown", x = Genus)~NA,
                            .default = Genus)) |> 
   arrange(is.na(Genus), type, Genus)
@@ -999,6 +999,3 @@ ggsave("Figures/Figure10.png", plot = pl10, width = wd, height = hei)
 ggsave("Figures/Figure10.eps", plot = pl10, device = cairo_ps, width = wd, height = hei)
 saveWidget(ggplotly(pl10) , file = "Figures/Figure10.html", libdir = "AuxFiles/")
 ```
-
-
-
