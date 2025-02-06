@@ -934,6 +934,10 @@ dfExp3_Figure10 <- df_correspondance |>
   filter(hits >0)
 ```
 
+```{r show data Figure 10}
+dfExp3_Figure10 |> select(Experiment, Genus,Order, Proportion, hits) |>     knitr::kable()
+```
+
 We set up the colors, essentially using the same as the ones used in the previous Figures.
 
 ```{r colors Figure 10}
