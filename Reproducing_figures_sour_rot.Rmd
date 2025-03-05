@@ -480,6 +480,17 @@ ggsave("Figures/Figure6B.eps", plot = pl6B, device = cairo_ps, width = wd, heigh
 saveWidget(ggplotly(pl6B) , file = "Figures/Figure6B.html", libdir = "AuxFiles/")
 ```
 
+```{r save and combine Figure 6}
+pl6 <- cowplot::plot_grid(pl6A, pl6B, align = "v", nrow = 2, 
+                          rel_heights = c(1/2, 1/2))
+pl6
+ggsave("Figures/Figure6.png", plot = pl6, width = wd, height = 2* hei)
+ggsave("Figures/Figure6.eps", plot = pl6, device = cairo_ps, width = wd, height = 2*hei)
+
+```
+
+
+
 ### Figure of the third study
 
 The third study gathers data from four categories: healthy berries post-surface sterilization (internal), the surface of healthy non-sterilized berries (external),berries affected by sour rot (sour rot) of grapes cv. Gamay and of Drosophila spp. (insects) captured in a commercial vineyard in Begnins (VD, Switzerland).
