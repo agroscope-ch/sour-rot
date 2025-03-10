@@ -482,7 +482,7 @@ saveWidget(ggplotly(pl6B) , file = "Figures/Figure6B.html", libdir = "AuxFiles/"
 
 ```{r save and combine Figure 6}
 pl6 <- cowplot::plot_grid(pl6A, pl6B, align = "v", nrow = 2, 
-                          rel_heights = c(1/2, 1/2))
+                          rel_heights = c(1/2, 1/2), labels = c('', ''))
 pl6
 ggsave("Figures/Figure6.png", plot = pl6, width = wd, height = 2* hei)
 ggsave("Figures/Figure6.eps", plot = pl6, device = cairo_ps, width = wd, height = 2*hei)
@@ -799,7 +799,7 @@ We also provide the plots without title (to be combined manually for the paper v
 
 ```{r figure 8 in pdf format}
 set.seed(1) # This makes the plot appear the same each time it is run 
-  heat_tree(obj, 
+heat_tree_sourrot <- heat_tree(obj, 
             node_label = taxon_names,
             node_size = n_obs,
             node_color = obj$data$tax_occ$`sour rot`,
@@ -811,7 +811,7 @@ set.seed(1) # This makes the plot appear the same each time it is run
             edge_color_interval =  range_col, 
             output_file = "Figures/Figure8_A_sour_rot.pdf")
  set.seed(1) # This makes the plot appear the same each time it is run 
-  heat_tree(obj, 
+heat_tree_extern <- heat_tree(obj, 
             node_label = taxon_names,
             node_size = n_obs,
             node_color = extern, 
@@ -823,7 +823,7 @@ set.seed(1) # This makes the plot appear the same each time it is run
             edge_color_interval =  range_col, 
             output_file = "Figures/Figure8_B_healthy_berries.pdf")
 set.seed(1) # This makes the plot appear the same each time it is run 
-  heat_tree(obj, 
+heat_tree_drosophilia <- heat_tree(obj, 
             node_label = taxon_names,
             node_size = n_obs,
             node_color = insect, 
@@ -835,6 +835,18 @@ set.seed(1) # This makes the plot appear the same each time it is run
             edge_color_interval =  range_col,
             output_file = "Figures/Figure8_C_Drosophilia.pdf")
 ```
+
+We then combine the plots in a single file and save it in the suitable format.
+
+```{r combine plots figure 8}
+bottom_row <- cowplot::plot_grid(heat_tree_extern, heat_tree_drosophilia, labels = c('B', 'C'), label_size = 12)
+
+pl8 <- cowplot::plot_grid(heat_tree_sourrot, bottom_row, labels = c('A', ''), label_size = 12, ncol = 1, rel_heights = c(1/2, 1/2))
+ggsave("Figures/Figure8.png", plot = pl8, width = 2*wd, height = 2 * hei)
+ggsave("Figures/Figure8.eps", plot = pl8, device = cairo_ps, width = 2*wd, height = 2 * hei)
+```
+
+
 
 #### Relative abundance
 
