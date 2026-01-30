@@ -1,0 +1,39 @@
+publiccodeYmlVersion: 0.5.0
+name: Sour rot
+url: https://github.com/agroscope-ch/sour-rot/
+releaseDate: 2025-04-03
+platforms:
+  - linux
+  - mac
+  - windows
+developmentStatus: concept
+softwareType: standalone/other
+organisation:
+  uri: https://ld.admin.ch/ou/10003634
+  name: Agroscope
+description:
+  en:
+    localisedName: Sour rot
+    shortDescription: 'Codes associated to the paper "Revisiting sour rot of
+      grapevine through disease-associated microbiomes: a tripartite
+      co-infection?"'
+    longDescription: 'Repository associated to the paper "Revisiting sour rot of
+      grapevine through disease-associated microbiomes: a tripartite
+      co-infection?". We provide all the data used in the paper in the folder
+      Data. In addition to providing the data and for the sake of
+      reproducibility, we provide the codes that have produced the analyses and
+      the figures of this paper. The codes are provided in the Rmarkdown file
+      Reproducing_figures_sour_rot.Rmd, that both produce the results and gives
+      details about how they are obtained, so as to make all the preprocessing
+      steps fully transparent.'
+    documentation: https://github.com/agroscope-ch/sour-rot/
+    features:
+      - Reproducing graphics and analysis
+legal:
+  license: CC-BY-SA-4.0
+maintenance:
+  type: none
+localisation:
+  localisationReady: true
+  availableLanguages:
+    - en
